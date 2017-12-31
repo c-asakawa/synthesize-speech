@@ -3,180 +3,91 @@
     <title>Speech Synthesizer</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <!-- Angular Material style sheet -->
-    <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/angular_material/1.1.0/angular-material.min.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+    <link href="https://gitcdn.github.io/bootstrap-toggle/2.2.2/css/bootstrap-toggle.min.css" rel="stylesheet">
 
 
-    <!-- Angular Material requires Angular.js Libraries -->
-    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.5/angular.min.js"></script>
-    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.5/angular-animate.min.js"></script>
-    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.5/angular-aria.min.js"></script>
-    <script src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.5/angular-messages.min.js"></script>
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/angular-material/1.1.5/angular-material.min.js"></script>
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.5/angular.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+    <script type="text/javascript" src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <script src="https://gitcdn.github.io/bootstrap-toggle/2.2.2/js/bootstrap-toggle.min.js"></script>
 
     <script>
-        /*
-         * This sample code requires a web browser with support for both the
-         * HTML5 and ECMAScript 5 standards; the following is a non-comprehensive
-         * list of compliant browsers and their minimum version:
-         *
-         * - Chrome 23.0+
-         * - Firefox 21.0+
-         * - Internet Explorer 9.0+
-         * - Edge 12.0+
-         * - Opera 15.0+
-         * - Safari 6.1+
-         * - Android (stock web browser) 4.4+
-         * - Chrome for Android 51.0+
-         * - Firefox for Android 48.0+
-         * - Opera Mobile 37.0+
-         * - iOS (Safari Mobile and Chrome) 3.2+
-         * - Internet Explorer Mobile 10.0+
-         * - Blackberry Browser 10.0+
-         */
 
-        // Mapping of the OutputFormat parameter of the SynthesizeSpeech API
-        // and the audio format strings understood by the browser
-        var AUDIO_FORMATS = {
-            'ogg_vorbis': 'audio/ogg',
-            'mp3': 'audio/mpeg',
-            'pcm': 'audio/wave; codecs=1'
-        };
+        //Define an angular module for our app
+        var app = angular.module('pollyApp', []);
 
-        /**
-         * Handles fetching JSON over HTTP
-         */
-        function fetchJSON(method, url, onSuccess, onError) {
-            var request = new XMLHttpRequest();
-            request.open(method, url, true);
-            request.onload = function () {
-                // If loading is complete
-                if (request.readyState === 4) {
-                    // if the request was successful
-                    if (request.status === 200) {
-                        var data;
+        app.controller('pollyController', function($scope, $timeout){
 
-                        // Parse the JSON in the response
-                        try {
-                            data = JSON.parse(request.responseText);
-                        } catch (error) {
-                            onError(request.status, error.toString());
-                        }
-
-                        onSuccess(data);
-                    } else {
-                        onError(request.status, request.responseText)
-                    }
-                }
+            // Mapping of the OutputFormat parameter of the SynthesizeSpeech API
+            // and the audio format strings understood by the browser
+            var AUDIO_FORMATS = {
+                'ogg_vorbis': 'audio/ogg',
+                'mp3': 'audio/mpeg',
+                'pcm': 'audio/wave; codecs=1'
             };
 
-            request.send();
-        }
+            var selectedIndex = 0;
+            $scope.isMale = false;
 
-        /**
-         * Returns a list of audio formats supported by the browser
-         */
-        function getSupportedAudioFormats(player) {
-            return Object.keys(AUDIO_FORMATS)
-                .filter(function (format) {
-                    var supported = player.canPlayType(AUDIO_FORMATS[format]);
-                    return supported === 'probably' || supported === 'maybe';
+            $scope.voices = [];
+            $scope.text = '';
+            $scope.supportedFormats = getSupportedAudioFormats(player);
+
+            /* init toggle and toggle event listener */
+            $(function() {
+                $('#genderToggle').bootstrapToggle();
+                $('#genderToggle').change(function() {
+                    console.log('toggled:', $(this).prop('checked'));
+                    $scope.$apply(function() {
+                        $scope.isMale = $(this).prop('checked');
+                    });
+                    $timeout(function() {
+
+                    },1);
+
                 });
-        }
+            });
 
-        // Initialize the application when the DOM is loaded and ready to be
-        // manipulated
-        document.addEventListener("DOMContentLoaded", function () {
-            var input = document.getElementById('input'),
-                voiceMenu = document.getElementById('voice'),
-                text = document.getElementById('text'),
-                player = document.getElementById('player'),
-                submit = document.getElementById('submit'),
-                supportedFormats = getSupportedAudioFormats(player);
 
-            // Display a message and don't allow submitting the form if the
-            // browser doesn't support any of the available audio formats
-            if (supportedFormats.length === 0) {
-                submit.disabled = true;
-                alert('The web browser in use does not support any of the' +
-                      ' available audio formats. Please try with a different' +
-                      ' one.');
-            }
-
-            // Play the audio stream when the form is submitted successfully
-            input.addEventListener('submit', function (event) {
-                // Validate the fields in the form, display a message if
-                // unexpected values are encountered
-                if (voiceMenu.selectedIndex <= 0 || text.value.length === 0) {
-                    alert('Please fill in all the fields.');
-                } else {
-                    var selectedVoice = voiceMenu
-                                            .options[voiceMenu.selectedIndex]
-                                            .value;
+            $scope.selectVoice = function(index) { selectedIndex = index; }
+            $scope.clear = function() { $scope.text = ''; }
+            
+            $scope.synthesize = function() {
+   
+                    var selectedVoice = $scope.voices[selectedIndex].Id;
+                    console.log('selectedVoice', selectedVoice)
 
                     // Point the player to the streaming server
                     player.src = '/read?voiceId=' +
                         encodeURIComponent(selectedVoice) +
-                        '&text=' + encodeURIComponent(text.value) +
-                        '&outputFormat=' + supportedFormats[0];
+                        '&text=' + encodeURIComponent($scope.text) +
+                        '&outputFormat=' + $scope.supportedFormats[0];
                     player.play();
-                }
 
                 // Stop the form from submitting,
                 // Submitting the form is allowed only if the browser doesn't
                 // support Javascript to ensure functionality in such a case
                 event.preventDefault();
-            });
+            }
 
-            // Load the list of available voices and display them in a menu
+
             fetchJSON('GET', '/voices',
                 // If the request succeeds
                 function (voices) {
-                    var container = document.createDocumentFragment();
-
                     // Build the list of options for the menu
-                    voices.forEach(function (voice) {
+                    $scope.$apply(function() {
+                        voices.forEach(function (voice) {
 
                         // console.log('fetching voice:', voice);
 
-                        // only grab the english speaking voices
-                        if(voice.LanguageCode.startsWith('en')) {
-
-                            var option = document.createElement('option');
-                            option.value = voice['Id'];
-                            option.innerHTML = voice['Name'] + ' (' +
-                                voice['Gender'] + ', ' +
-                                voice['LanguageName'] + ')';
-                            container.appendChild(option);
-                            
-                        }
+                            // only grab the english speaking voices
+                            if(voice.LanguageCode.startsWith('en')) {
+                                $scope.voices.push(voice);
+                            }
+                        });
                     });
-
-                    // Add the options to the menu and enable the form field
-                    voiceMenu.appendChild(container);
-                    voiceMenu.disabled = false;
-                },
-                // If the request fails
-                function (status, response) {
-                    // Display a message in case loading data from the server
-                    // fails
-                    alert(status + ' - ' + response);
-            });
-        });
-
-    </script>
-    <script>
-        //Define an angular module for our app
-        var app = angular.module('pollyApp', []);
-
-        app.controller('pollyController', function($scope){
-
-            $scope.voices = [];
-            
-            fetchJSON('GET', '/voices',
-                // If the request succeeds
-                function (voices) {
-                    // Build the list of options for the menu
-                    $scope.voices = voices;
                     console.log('successfully fetched voices:', $scope.voices)
                 },
                 // If the request fails
@@ -186,55 +97,152 @@
                     alert(status + ' - ' + response);
             });
 
+            /**
+             * Handles fetching JSON over HTTP
+             */
+            function fetchJSON(method, url, onSuccess, onError) {
+                var request = new XMLHttpRequest();
+                request.open(method, url, true);
+                request.onload = function () {
+                    // If loading is complete
+                    if (request.readyState === 4) {
+                        // if the request was successful
+                        if (request.status === 200) {
+                            var data;
+
+                            // Parse the JSON in the response
+                            try {
+                                data = JSON.parse(request.responseText);
+                            } catch (error) {
+                                onError(request.status, error.toString());
+                            }
+
+                            onSuccess(data);
+                        } else {
+                            onError(request.status, request.responseText)
+                        }
+                    }
+                };
+
+                request.send();
+            }
+
+            /**
+             * Returns a list of audio formats supported by the browser
+             */
+            function getSupportedAudioFormats(player) {
+                return Object.keys(AUDIO_FORMATS)
+                    .filter(function (format) {
+                        var supported = player.canPlayType(AUDIO_FORMATS[format]);
+                        return supported === 'probably' || supported === 'maybe';
+                    });
+            }
+
+            // Initialize the application when the DOM is loaded and ready to be
+            // manipulated
+            document.addEventListener("DOMContentLoaded", function () {
+                var player = document.getElementById('player');
+                var supportedFormats = getSupportedAudioFormats(player);
+
+                // Display a message and don't allow submitting the form if the
+                // browser doesn't support any of the available audio formats
+                if (supportedFormats.length === 0) {
+                    submit.disabled = true;
+                    alert('The web browser in use does not support any of the' +
+                          ' available audio formats. Please try with a different' +
+                          ' one.');
+                }
+
+            });
+
         });
     </script>
     <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/angular-material/1.1.5/angular-material.min.css" />
 
     <style>
-        #input {
-            min-width: 100px;
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 50px;
-        }
 
-        #input div {
-            margin-bottom: 20px;
-        }
 
-        #text {
+        .dropDownToggle {
+            min-width: 300px;
+        }
+        .dropDownItem {
             width: 100%;
-            height: 200px;
             display: block;
+            margin-left: 2px;
+            padding: 5px;
+            text-decoration: none;
+            color: #000;
+        }
+        .dropDownItem:hover {
+            background-color: #eee;
+            text-decoration: none;
+            color: #000;
+        }
+        .dropDownItem:active {
+            background-color: #eee;
+            text-decoration: none;
+            color: #000;
         }
 
-        #submit {
-            width: 100%;
-        }
     </style>
 </head>
 
 <body ng-app="pollyApp" ng-controller="pollyController">
-    <form id="input" method="GET" action="/read">
-        <div>
-            <label for="voice">Select a voice:</label>
-            <select id="voice" name="voiceId" disabled>
-                <option value="">Choose a voice...</option>
-            </select>
+
+ <input type="checkbox" checked 
+    id="genderToggle"
+    data-toggle="toggle" 
+    data-size="small" 
+    data-on="Female" 
+    data-off="Male" 
+    data-onstyle="info" 
+    data-offstyle="info" />
+    <!-- select voice dropdown -->
+    <div id="voiceSelection">
+        <div class="btn-group">
+            <button type="button" 
+                class="btn btn-primary" 
+                data-toggle="dropdown" 
+                aria-haspopup="true" 
+                aria-expanded="false">
+                Select a Voice&ensp;
+                <i class="fa fa-angle-down" aria-hidden="true"></i>
+            </button>
+            <div class="dropdown-menu" style="min-width:300px;">
+                <div class="dropDownItem" 
+                    ng-repeat="voice in voices"
+                    ng-click="selectVoice($index)"
+                    ng-show="!isMale && voice.Gender == 'Female'">
+                    {{voice.Name}} ({{voice.Gender}} - {{voice.LanguageName}})
+                </div>
+                <div class="dropDownItem" 
+                    ng-repeat="voice in voices"
+                    ng-click="selectVoice($index)"
+                    ng-show="isMale && voice.Gender == 'Male'">
+                    {{voice.Name}} ({{voice.Gender}} - {{voice.LanguageName}})
+                </div>
+            </div>
         </div>
-        <div>
-            <label for="text">Text to read:</label>
-            <textarea id="text" maxlength="1000" minlength="1" name="text"
-                    placeholder="Type some text here..."></textarea>
-        </div>
-        <input type="submit" value="Speak" id="submit" />
-    </form>
+    </div>
+
+    <!-- user input text area -->
+    <textarea ng-model="text"></textarea>
+
+    <!-- synthesize button -->
+    <button type="button" class="btn btn-primary" ng-click="synthesize()">
+        <i class="fa fa-volume-up" aria-hidden="true"></i>
+        &ensp;Speak
+    </button>
+    <!-- clear text button -->
+    <button type="button" class="btn btn-danger" ng-click="clear()">
+        <i class="fa fa-ban" aria-hidden="true"></i>
+        &ensp;Clear
+    </button>
+
+
     <audio id="player"></audio>
 
-    <md-input-container>
-        <label>Title</label>
-        <input ng-model="user.title">
-    </md-input-container>
+
 </body>
 
 </html>
