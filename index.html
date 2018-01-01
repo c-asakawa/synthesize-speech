@@ -17,9 +17,9 @@
     <script>
 
         //Define an angular module for our app
-        var app = angular.module('pollyApp', []);
+        var app = angular.module('pollyApp', ['LocalStorageModule']);
 
-        app.controller('pollyController', function($scope, $timeout){
+        app.controller('pollyController', function($scope, $timeout, $interval, localStorageService){
 
             // Mapping of the OutputFormat parameter of the SynthesizeSpeech API
             // and the audio format strings understood by the browser
@@ -31,36 +31,36 @@
 
             $scope.selectedIndex = 0;
             $scope.isMale = false;
-
             $scope.voices = [];
             $scope.text = '';
             $scope.supportedFormats = getSupportedAudioFormats(player);
-
-            /* init toggle and toggle event listener */
-            $(function() {
-                $('#genderToggle').bootstrapToggle();
-                $('#genderToggle').change(function() {
-                    console.log('toggled:', $(this).prop('checked'));
-                    $scope.isMale = !$(this).prop('checked');
-                    $scope.$apply();
-                });
-            });
+            $scope.localStorage = {};
+            $scope.history = [];
 
 
-            $scope.selectVoice = function(index) { $scope.selectedIndex = index; }
+            // init the application
+            initApp();
+
             $scope.clear = function() { $scope.text = ''; }
+
+            $scope.selectVoice = function(index) { 
+                $scope.selectedIndex = index;
+                // localStorage.selectedVoiceIndex = index;
+                // localStorageService.set('polly', localStorage);   
+            }
             
             $scope.synthesize = function() {
 
-                    var selectedVoice = $scope.voices[$scope.selectedIndex].Id;
-                    console.log('selectedVoice', selectedVoice)
+                var selectedVoice = $scope.voices[$scope.selectedIndex].Id;
+                console.log('selectedVoice', selectedVoice);
+                addToHistory();
 
-                    // Point the player to the streaming server
-                    player.src = '/read?voiceId=' +
-                        encodeURIComponent(selectedVoice) +
-                        '&text=' + encodeURIComponent($scope.text) +
-                        '&outputFormat=' + $scope.supportedFormats[0];
-                    player.play();
+                // Point the player to the streaming server
+                player.src = '/read?voiceId=' +
+                    encodeURIComponent(selectedVoice) +
+                    '&text=' + encodeURIComponent($scope.text) +
+                    '&outputFormat=' + $scope.supportedFormats[0];
+                player.play();
 
                 // Stop the form from submitting,
                 // Submitting the form is allowed only if the browser doesn't
@@ -74,30 +74,126 @@
                 $scope.synthesize();
             }   
 
+            function initApp() {
+                /* init toggle and toggle event listener */
+                $(function() {
+                    // init the toggle
+                    $('#genderToggle').bootstrapToggle();
 
-            fetchJSON('GET', '/voices',
-                // If the request succeeds
-                function (voices) {
-                    // Build the list of options for the menu
-                    $scope.$apply(function() {
-                        voices.forEach(function (voice) {
-
-                        // console.log('fetching voice:', voice);
-
-                            // only grab the english speaking voices
-                            if(voice.LanguageCode.startsWith('en')) {
-                                $scope.voices.push(voice);
-                            }
-                        });
+                    // event to watch changes in the toggle.
+                    $('#genderToggle').change(function() {
+                        console.log('toggled:', $(this).prop('checked'));
+                        $scope.isMale = !$(this).prop('checked');
+                        $scope.$apply();
                     });
-                    console.log('successfully fetched voices:', $scope.voices)
-                },
-                // If the request fails
-                function (status, response) {
-                    // Display a message in case loading data from the server
-                    // fails
-                    alert(status + ' - ' + response);
-            });
+                });
+
+
+                getVoices(function() {
+                    initLocalStorage();
+                    $scope.$apply();
+                });
+                // update the local storage
+                $interval(function() {
+                    // console.log('localStorage:', $scope.localStorage)
+
+                    // check to see if the selected index has changed
+                    if ($scope.localStorage.voice.index != $scope.selectedIndex) {
+                        $scope.localStorage.voice.index = $scope.selectedIndex;
+
+                        // now in addition, check to see if the gender is out of sync
+                        if ($scope.localStorage.voice.gender == 'female' && $scope.isMale) {
+                            $scope.localStorage.voice.gender = 'male';
+                            console.log('updated male')
+                        }
+                        else if ($scope.localStorage.voice.gender == 'male' && !$scope.isMale) {
+                            $scope.localStorage.voice.gender = 'female';
+                            console.log('updated female')
+                        }
+                        localStorageService.set('polly', $scope.localStorage);
+
+
+                    }
+
+                }, 1000 * 3);
+            }
+
+
+
+            function initLocalStorage() {
+                $scope.localStorage = localStorageService.get('polly');
+                console.log('current state of the local storage:', $scope.localStorage);
+
+                // new instance? if so init a new storage object
+                if ($scope.localStorage == null) {
+                    $scope.localStorage = {
+                        voice: {
+                            index: 0,
+                            gender: 'female',
+                        },
+                        language: 'english',
+                        history: []
+                    }
+                    localStorageService.set('polly', $scope.localStorage);
+                }
+                // use the storage object to set up the env.
+                else {
+                    console.log('init app with storage object');
+
+                    $scope.selectedIndex = $scope.localStorage.voice.index;
+                    if ($scope.localStorage.voice.gender == 'female') {
+                        $scope.isMale = false;
+                    }
+                    else {
+                        $scope.isMale = true;
+                        $('#genderToggle').bootstrapToggle('toggle');
+                    }
+                    $scope.history = $scope.localStorage.history;
+                    // $scope.$apply();
+                }
+                
+            }
+
+            function addToHistory() {
+                for (var i=0; i < $scope.history.length; i++) {
+                    if ($scope.text == $scope.history[i]) {
+                        // alreadyInHistory = true;
+                        $scope.history.splice(i, 1);
+                        break;
+                    }
+                }
+                // console.log('adding to history:', $scope.text);
+                $scope.history.unshift($scope.text);
+                localStorageService.set('polly', $scope.localStorage);   
+                // console.log('history:', $scope.history);
+            }
+
+            // makes a request to get the available voices
+            function getVoices (callback){
+                fetchJSON('GET', '/voices',
+                    // If the request succeeds
+                    function (voices) {
+                        // Build the list of options for the menu
+                        $scope.$apply(function() {
+                            voices.forEach(function (voice) {
+                                // console.log('fetching voice:', voice);
+                                // only grab the english speaking voices
+                                if(voice.LanguageCode.startsWith('en')) {
+                                    $scope.voices.push(voice);
+                                }
+                            });
+                        });
+                        console.log('successfully fetched voices:', $scope.voices);
+                        return callback();
+                    },
+                    // If the request fails
+                    function (status, response) {
+                        // Display a message in case loading data from the server
+                        // fails
+                        alert(status + ' - ' + response);
+                });
+            }
+
 
             /**
              * Handles fetching JSON over HTTP
@@ -230,7 +326,7 @@
                 data-on="Female" 
                 data-off="Male" 
                 data-onstyle="info" 
-                data-offstyle="info" />
+                data-offstyle="info"/>
         </div>
         <!-- select voice dropdown -->
         <div id="voiceSelection" class="col-sm-3">
@@ -271,7 +367,7 @@
 
     <!-- user input text area row -->
     <div class="row">
-        <div class="col-sm-12">
+        <div class="col-sm-8">
             <!-- user input text area -->
             <textarea ng-model="text" 
                 class="textInput boxShadow"
@@ -307,7 +403,6 @@
 
     <!-- audio element: does not display anything -->
     <audio id="player"></audio>
-
 
 </body>
 
