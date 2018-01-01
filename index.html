@@ -312,6 +312,7 @@
             -moz-box-shadow: 0px 5px 10px 0px rgba(0,0,0,0.5);
             box-shadow: 0px 5px 10px 0px rgba(0,0,0,0.5);
         }
+        ul { list-style-type:none; padding:0; margin:0;}
     </style>
 </head>
 
@@ -371,35 +372,45 @@
             <!-- user input text area -->
             <textarea ng-model="text" 
                 class="textInput boxShadow"
-                ng-keydown="$event.keyCode == 13 && pressEnterOnText($event);">
+                ng-keydown="$event.keyCode == 13 && pressEnterOnText($event);"
+                placeholder="type what you want to say into here">
             </textarea>
+                <!-- action button row -->
+            <div class="row">
+                <div class="col-sm-6" style="padding-left:0;">
+                    <!-- synthesize button -->
+                    <button type="button" class="btn btn-success btn-lg btn-block largeButton" ng-click="synthesize()" ng-disabled="text.length==0">
+                        <i class="fa fa-volume-up" aria-hidden="true"></i>
+                        &ensp;Speak
+                    </button>
+                </div>
+                <div class="col-sm-3">
+                    <!-- clear text button -->
+                    <button type="button" class="btn btn-danger btn-lg btn-block largeButton" ng-click="clear()" ng-disabled="text.length==0">
+                        <i class="fa fa-ban" aria-hidden="true"></i>
+                        &ensp;Clear
+                    </button>
+                </div>
+                <div class="col-sm-3">
+                    <!-- clear text button -->
+                    <button type="button" class="btn btn-primary btn-lg btn-block largeButton" ng-click="save()" ng-disabled="text.length==0">
+                        <i class="fa fa-floppy-o" aria-hidden="true"></i>
+                        &ensp;Save
+                    </button>
+                </div>
+            </div> <!-- end action button row -->
+        </div>
+        <div class="col-sm-4" class="historyContainer">
+            <button type="button" 
+                class="btn btn-secondary btn-lg btn-block" 
+                ng-repeat="entry in history"
+                style="background-color: #f9f9f9;">
+                {{entry}}
+            </button>
         </div>
     </div>
 
-    <!-- action button row -->
-    <div class="row">
-        <div class="col-sm-2">
-            <!-- synthesize button -->
-            <button type="button" class="btn btn-primary largeButton" ng-click="synthesize()" ng-disabled="text.length==0">
-                <i class="fa fa-volume-up" aria-hidden="true"></i>
-                &ensp;Speak
-            </button>
-        </div>
-        <div class="col-sm-2">
-            <!-- clear text button -->
-            <button type="button" class="btn btn-danger largeButton" ng-click="clear()" ng-disabled="text.length==0">
-                <i class="fa fa-ban" aria-hidden="true"></i>
-                &ensp;Clear
-            </button>
-        </div>
-        <div class="col-sm-2">
-            <!-- clear text button -->
-            <button type="button" class="btn btn-primary largeButton" ng-click="save()" ng-disabled="text.length==0">
-                <i class="fa fa-floppy-o" aria-hidden="true"></i>
-                &ensp;Save
-            </button>
-        </div>
-    </div> <!-- end action button row -->
+
 
     <!-- audio element: does not display anything -->
     <audio id="player"></audio>
