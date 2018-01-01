@@ -9,6 +9,7 @@
 
 
     <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.5/angular.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/angular-local-storage/0.7.1/angular-local-storage.min.js"></script>
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
     <script type="text/javascript" src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
     <script src="https://gitcdn.github.io/bootstrap-toggle/2.2.2/js/bootstrap-toggle.min.js"></script>
@@ -28,7 +29,7 @@
                 'pcm': 'audio/wave; codecs=1'
             };
 
-            var selectedIndex = 0;
+            $scope.selectedIndex = 0;
             $scope.isMale = false;
 
             $scope.voices = [];
@@ -40,23 +41,18 @@
                 $('#genderToggle').bootstrapToggle();
                 $('#genderToggle').change(function() {
                     console.log('toggled:', $(this).prop('checked'));
-                    $scope.$apply(function() {
-                        $scope.isMale = $(this).prop('checked');
-                    });
-                    $timeout(function() {
-
-                    },1);
-
+                    $scope.isMale = !$(this).prop('checked');
+                    $scope.$apply();
                 });
             });
 
 
-            $scope.selectVoice = function(index) { selectedIndex = index; }
+            $scope.selectVoice = function(index) { $scope.selectedIndex = index; }
             $scope.clear = function() { $scope.text = ''; }
             
             $scope.synthesize = function() {
-   
-                    var selectedVoice = $scope.voices[selectedIndex].Id;
+
+                    var selectedVoice = $scope.voices[$scope.selectedIndex].Id;
                     console.log('selectedVoice', selectedVoice)
 
                     // Point the player to the streaming server
@@ -71,6 +67,12 @@
                 // support Javascript to ensure functionality in such a case
                 event.preventDefault();
             }
+
+            $scope.pressEnterOnText = function(event) {
+                console.log('pressEnterOnText:', event);
+                event.preventDefault();
+                $scope.synthesize();
+            }   
 
 
             fetchJSON('GET', '/voices',
@@ -160,10 +162,27 @@
     <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/angular-material/1.1.5/angular-material.min.css" />
 
     <style>
-
-
+        .largeButton {
+            height: 55px;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        .row {
+            margin: 20px 0;
+        }
+        .toggle{
+            width: 100px !important;
+            height: 55px !important;
+        }
+        .toggle-group > label {
+            font-size: 16px;
+            padding-top: 14px;
+            font-weight: bold;
+        }
         .dropDownToggle {
-            min-width: 300px;
+            font-size: 16px;
+            font-weight: bold;
+            height: 55px;
         }
         .dropDownItem {
             width: 100%;
@@ -183,63 +202,110 @@
             text-decoration: none;
             color: #000;
         }
+        .displayVoiceName {
+            font-size: 16px;
+            font-weight: bold;
+        }
 
+        .textInput {
+            width: 100%;
+            height: 200px
+        }
+        .boxShadow {
+            -webkit-box-shadow: 0px 5px 10px 0px rgba(0,0,0,0.5);
+            -moz-box-shadow: 0px 5px 10px 0px rgba(0,0,0,0.5);
+            box-shadow: 0px 5px 10px 0px rgba(0,0,0,0.5);
+        }
     </style>
 </head>
 
-<body ng-app="pollyApp" ng-controller="pollyController">
-
- <input type="checkbox" checked 
-    id="genderToggle"
-    data-toggle="toggle" 
-    data-size="small" 
-    data-on="Female" 
-    data-off="Male" 
-    data-onstyle="info" 
-    data-offstyle="info" />
-    <!-- select voice dropdown -->
-    <div id="voiceSelection">
-        <div class="btn-group">
-            <button type="button" 
-                class="btn btn-primary" 
-                data-toggle="dropdown" 
-                aria-haspopup="true" 
-                aria-expanded="false">
-                Select a Voice&ensp;
-                <i class="fa fa-angle-down" aria-hidden="true"></i>
-            </button>
-            <div class="dropdown-menu" style="min-width:300px;">
-                <div class="dropDownItem" 
-                    ng-repeat="voice in voices"
-                    ng-click="selectVoice($index)"
-                    ng-show="!isMale && voice.Gender == 'Female'">
-                    {{voice.Name}} ({{voice.Gender}} - {{voice.LanguageName}})
-                </div>
-                <div class="dropDownItem" 
-                    ng-repeat="voice in voices"
-                    ng-click="selectVoice($index)"
-                    ng-show="isMale && voice.Gender == 'Male'">
-                    {{voice.Name}} ({{voice.Gender}} - {{voice.LanguageName}})
+<body ng-app="pollyApp" ng-controller="pollyController" class="container">
+    <div class="row">
+        <!-- gender toggle -->
+        <div class="col-sm-2"> 
+            <input type="checkbox" checked 
+                id="genderToggle"
+                data-toggle="toggle" 
+                data-size="small" 
+                data-on="Female" 
+                data-off="Male" 
+                data-onstyle="info" 
+                data-offstyle="info" />
+        </div>
+        <!-- select voice dropdown -->
+        <div id="voiceSelection" class="col-sm-3">
+            <div class="btn-group">
+                <button type="button" 
+                    class="btn btn-primary dropDownToggle" 
+                    data-toggle="dropdown" 
+                    aria-haspopup="true" 
+                    aria-expanded="false">
+                    Select a Voice&ensp;
+                    <i class="fa fa-angle-down" aria-hidden="true"></i>
+                </button>
+                <div class="dropdown-menu" style="min-width:300px;">
+                    <div class="dropDownItem" 
+                        ng-repeat="voice in voices"
+                        ng-click="selectVoice($index)"
+                        ng-show="!isMale && voice.Gender == 'Female'">
+                        {{voice.Name}} ({{voice.LanguageName}})
+                    </div>
+                    <div class="dropDownItem" 
+                        ng-repeat="voice in voices"
+                        ng-click="selectVoice($index)"
+                        ng-show="isMale && voice.Gender == 'Male'">
+                        {{voice.Name}} ({{voice.LanguageName}})
+                    </div>
                 </div>
             </div>
         </div>
+
+        <!-- display the selected voice -->
+        <div class="col-sm-7">
+            Selected Voice: <br/>
+            <span class="displayVoiceName">
+                {{voices[selectedIndex].Name}} ({{voices[selectedIndex].LanguageName}})
+            </span>
+        </div>
+    </div> <!-- end voice selection row -->
+
+    <!-- user input text area row -->
+    <div class="row">
+        <div class="col-sm-12">
+            <!-- user input text area -->
+            <textarea ng-model="text" 
+                class="textInput boxShadow"
+                ng-keydown="$event.keyCode == 13 && pressEnterOnText($event);">
+            </textarea>
+        </div>
     </div>
 
-    <!-- user input text area -->
-    <textarea ng-model="text"></textarea>
+    <!-- action button row -->
+    <div class="row">
+        <div class="col-sm-2">
+            <!-- synthesize button -->
+            <button type="button" class="btn btn-primary largeButton" ng-click="synthesize()" ng-disabled="text.length==0">
+                <i class="fa fa-volume-up" aria-hidden="true"></i>
+                &ensp;Speak
+            </button>
+        </div>
+        <div class="col-sm-2">
+            <!-- clear text button -->
+            <button type="button" class="btn btn-danger largeButton" ng-click="clear()" ng-disabled="text.length==0">
+                <i class="fa fa-ban" aria-hidden="true"></i>
+                &ensp;Clear
+            </button>
+        </div>
+        <div class="col-sm-2">
+            <!-- clear text button -->
+            <button type="button" class="btn btn-primary largeButton" ng-click="save()" ng-disabled="text.length==0">
+                <i class="fa fa-floppy-o" aria-hidden="true"></i>
+                &ensp;Save
+            </button>
+        </div>
+    </div> <!-- end action button row -->
 
-    <!-- synthesize button -->
-    <button type="button" class="btn btn-primary" ng-click="synthesize()">
-        <i class="fa fa-volume-up" aria-hidden="true"></i>
-        &ensp;Speak
-    </button>
-    <!-- clear text button -->
-    <button type="button" class="btn btn-danger" ng-click="clear()">
-        <i class="fa fa-ban" aria-hidden="true"></i>
-        &ensp;Clear
-    </button>
-
-
+    <!-- audio element: does not display anything -->
     <audio id="player"></audio>
 
 
