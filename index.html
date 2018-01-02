@@ -7,10 +7,10 @@
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
     <link href="https://gitcdn.github.io/bootstrap-toggle/2.2.2/css/bootstrap-toggle.min.css" rel="stylesheet">
 
-
     <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.5/angular.min.js"></script>
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/angular-local-storage/0.7.1/angular-local-storage.min.js"></script>
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
+
     <script type="text/javascript" src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
     <script src="https://gitcdn.github.io/bootstrap-toggle/2.2.2/js/bootstrap-toggle.min.js"></script>
 
@@ -21,6 +21,8 @@
 
         app.controller('pollyController', function($scope, $timeout, $interval, localStorageService){
 
+            var initDefault = false;
+
             // Mapping of the OutputFormat parameter of the SynthesizeSpeech API
             // and the audio format strings understood by the browser
             var AUDIO_FORMATS = {
@@ -28,6 +30,13 @@
                 'mp3': 'audio/mpeg',
                 'pcm': 'audio/wave; codecs=1'
             };
+            var maxHistoryCount = 100;
+
+            var defaultPhrases = [
+                'Hi, how are you doing?',
+                'You are the best child, I love you.',
+                'chris cross apple sauce peanut butter toast'
+            ];
 
             $scope.selectedIndex = 0;
             $scope.isMale = false;
@@ -36,6 +45,8 @@
             $scope.supportedFormats = getSupportedAudioFormats(player);
             $scope.localStorage = {};
             $scope.history = [];
+            $scope.saved = [];
+            $scope.toastMessage = 'error';
 
 
             // init the application
@@ -49,11 +60,28 @@
                 // localStorageService.set('polly', localStorage);   
             }
             
-            $scope.synthesize = function() {
-
+            $scope.synthesize = function(dontAdd) {
+                dontAdd = dontAdd == true ? true : false;
                 var selectedVoice = $scope.voices[$scope.selectedIndex].Id;
+                // we can only sythesize if we have valid params, throw toast on invalid params
+                if ($scope.text.length == 0) {
+                    throwToast('Enter some text, so I can turn it to speech.')
+                    return;
+                }
+                if (selectedVoice == undefined) {
+                    throwToast('Select a voice for me to use.')
+                    return;
+                }
+                if ($scope.supportedFormats == undefined) {
+                    throwToast('This Browser does not support this app.')
+                    return;
+                }
+
+
                 console.log('selectedVoice', selectedVoice);
-                addToHistory();
+                if (!dontAdd) {
+                    addToHistory();
+                }
 
                 // Point the player to the streaming server
                 player.src = '/read?voiceId=' +
@@ -72,7 +100,12 @@
                 console.log('pressEnterOnText:', event);
                 event.preventDefault();
                 $scope.synthesize();
-            }   
+            }
+            $scope.clickHistory = function(entry) {
+                console.log('clickedHistory:', entry);
+                $scope.text = entry;
+                $scope.synthesize(true);
+            }
 
             function initApp() {
                 /* init toggle and toggle event listener */
@@ -86,6 +119,47 @@
                         $scope.isMale = !$(this).prop('checked');
                         $scope.$apply();
                     });
+
+
+                    var adjustment;
+
+                    $("ul.savedPhrases").sortable({
+                      group: 'savedPhrases',
+                      pullPlaceholder: false,
+                      // animation on drop
+                      onDrop: function ($item, container, _super) {
+                        var $clonedItem = $('<li/>').css({height: 0});
+                        $item.before($clonedItem);
+                        $clonedItem.animate({'height': $item.height()});
+
+                        $item.animate($clonedItem.position(), function  () {
+                          $clonedItem.detach();
+                          _super($item, container);
+                        });
+                      },
+
+                      // set $item relative to cursor position
+                      onDragStart: function ($item, container, _super) {
+                        var offset = $item.offset(),
+                            pointer = container.rootGroup.pointer;
+
+                        adjustment = {
+                          left: pointer.left - offset.left,
+                          top: pointer.top - offset.top
+                        };
+
+                        _super($item, container);
+                      },
+                      onDrag: function ($item, position) {
+                        $item.css({
+                          left: position.left - adjustment.left,
+                          top: position.top - adjustment.top
+                        });
+                      }
+                    });
+
+
+
                 });
 
 
@@ -111,28 +185,24 @@
                             console.log('updated female')
                         }
                         localStorageService.set('polly', $scope.localStorage);
-
-
                     }
-
                 }, 1000 * 3);
             }
-
-
 
             function initLocalStorage() {
                 $scope.localStorage = localStorageService.get('polly');
                 console.log('current state of the local storage:', $scope.localStorage);
 
                 // new instance? if so init a new storage object
-                if ($scope.localStorage == null) {
+                if (initDefault || $scope.localStorage == null) {
                     $scope.localStorage = {
                         voice: {
                             index: 0,
                             gender: 'female',
                         },
                         language: 'english',
-                        history: []
+                        history: [],
+                        saved: defaultPhrases,
                     }
                     localStorageService.set('polly', $scope.localStorage);
                 }
@@ -148,9 +218,10 @@
                         $scope.isMale = true;
                         $('#genderToggle').bootstrapToggle('toggle');
                     }
-                    $scope.history = $scope.localStorage.history;
                     // $scope.$apply();
                 }
+                $scope.history = $scope.localStorage.history;
+                $scope.saved = $scope.localStorage.saved;
                 
             }
 
@@ -164,8 +235,22 @@
                 }
                 // console.log('adding to history:', $scope.text);
                 $scope.history.unshift($scope.text);
+
+                if ($scope.history.length > maxHistoryCount) {
+                    $scope.history.splice(-1, 1);
+                }
+
                 localStorageService.set('polly', $scope.localStorage);   
                 // console.log('history:', $scope.history);
+            }
+
+            function throwToast(message) {
+                $scope.toastMessage = message;
+                var x = document.getElementById("toast")
+                x.className = "show";
+                $timeout(function(){ 
+                    x.className = x.className.replace("show", ""); 
+                }, 1000 * 4);
             }
 
             // makes a request to get the available voices
@@ -307,68 +392,163 @@
             width: 100%;
             height: 200px
         }
+        #historyContainer {
+            max-height: 370px;
+            overflow: auto;
+        }
+        .historyButton {
+            background-color: #f9f9f9;
+            font-size: 12px;
+            white-space: normal;
+            text-align: left;
+            max-height: 95px;
+            overflow: auto;
+        }
         .boxShadow {
             -webkit-box-shadow: 0px 5px 10px 0px rgba(0,0,0,0.5);
             -moz-box-shadow: 0px 5px 10px 0px rgba(0,0,0,0.5);
             box-shadow: 0px 5px 10px 0px rgba(0,0,0,0.5);
         }
+        #toast {
+            visibility: hidden;
+            min-width: 250px;
+            margin-left: -125px;
+            background-color: #333;
+            color: #fff;
+            text-align: center;
+            border-radius: 2px;
+            padding: 16px;
+            position: fixed;
+            z-index: 1;
+            left: 50%;
+            top: 20px;
+            font-size: 17px;
+        }
+        #toast.show {
+            visibility: visible;
+            -webkit-animation: fadein 0.8s, fadeout 0.8s 4.0s;
+            animation: fadein 0.8s, fadeout 0.8s 4.0s;
+        }
+        @-webkit-keyframes fadein {
+            from {top: 0; opacity: 0;} 
+            to {top: 20px; opacity: 1;}
+        }
+        @keyframes fadein {
+            from {top: 0; opacity: 0;}
+            to {top: 20px; opacity: 1;}
+        }
+        @-webkit-keyframes fadeout {
+            from {top: 20px; opacity: 1;} 
+            to {top: 0; opacity: 0;}
+        }
+        @keyframes fadeout {
+            from {top: 20px; opacity: 1;}
+            to {top: 0; opacity: 0;}
+        }
         ul { list-style-type:none; padding:0; margin:0;}
+        body.dragging, body.dragging * {
+            cursor: move !important;
+        }
+
+body.dragging, body.dragging * {
+  cursor: move !important;
+}
+.dragged {
+  position: absolute;
+  top: 0;
+  opacity: 0.5;
+  z-index: 2000;
+}
+ul.vertical {
+  margin: 0 0 9px 0;
+  min-height: 10px;
+}
+li {
+    display: block;
+    margin: 5px;
+    padding: 5px;
+    border: 1px solid #CCC;
+    color: green;
+    background: #eee;
+}
+li.placeholder {
+    position: relative;
+    margin: 0;
+    padding: 0;
+    border: none;
+}
+ul.savedPhrases li.placeholder:before {
+    position: absolute;
+    content: "";
+    width: 0;
+    height: 0;
+    margin-top: -5px;
+    left: -5px;
+    top: -4px;
+    border: 5px solid transparent;
+    border-left-color: red;
+    border-right: none;
+}
+
+
     </style>
 </head>
 
 <body ng-app="pollyApp" ng-controller="pollyController" class="container">
-    <div class="row">
-        <!-- gender toggle -->
-        <div class="col-sm-2"> 
-            <input type="checkbox" checked 
-                id="genderToggle"
-                data-toggle="toggle" 
-                data-size="small" 
-                data-on="Female" 
-                data-off="Male" 
-                data-onstyle="info" 
-                data-offstyle="info"/>
-        </div>
-        <!-- select voice dropdown -->
-        <div id="voiceSelection" class="col-sm-3">
-            <div class="btn-group">
-                <button type="button" 
-                    class="btn btn-primary dropDownToggle" 
-                    data-toggle="dropdown" 
-                    aria-haspopup="true" 
-                    aria-expanded="false">
-                    Select a Voice&ensp;
-                    <i class="fa fa-angle-down" aria-hidden="true"></i>
-                </button>
-                <div class="dropdown-menu" style="min-width:300px;">
-                    <div class="dropDownItem" 
-                        ng-repeat="voice in voices"
-                        ng-click="selectVoice($index)"
-                        ng-show="!isMale && voice.Gender == 'Female'">
-                        {{voice.Name}} ({{voice.LanguageName}})
-                    </div>
-                    <div class="dropDownItem" 
-                        ng-repeat="voice in voices"
-                        ng-click="selectVoice($index)"
-                        ng-show="isMale && voice.Gender == 'Male'">
-                        {{voice.Name}} ({{voice.LanguageName}})
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- display the selected voice -->
-        <div class="col-sm-7">
-            Selected Voice: <br/>
-            <span class="displayVoiceName">
-                {{voices[selectedIndex].Name}} ({{voices[selectedIndex].LanguageName}})
-            </span>
-        </div>
-    </div> <!-- end voice selection row -->
-
+    
     <!-- user input text area row -->
     <div class="row">
         <div class="col-sm-8">
+
+            <div class="row">
+                <!-- gender toggle -->
+                <div class="col-sm-3" style="padding-left:0;"> 
+                    <input type="checkbox" checked 
+                        id="genderToggle"
+                        data-toggle="toggle" 
+                        data-size="small" 
+                        data-on="Female" 
+                        data-off="Male" 
+                        data-onstyle="info" 
+                        data-offstyle="info"/>
+                </div>
+                <!-- select voice dropdown -->
+                <div id="voiceSelection" class="col-sm-4">
+                    <div class="btn-group">
+                        <button type="button" 
+                            class="btn btn-primary dropDownToggle" 
+                            data-toggle="dropdown" 
+                            aria-haspopup="true" 
+                            aria-expanded="false">
+                            Select a Voice&ensp;
+                            <i class="fa fa-angle-down" aria-hidden="true"></i>
+                        </button>
+                        <div class="dropdown-menu" style="min-width:300px;">
+                            <div class="dropDownItem" 
+                                ng-repeat="voice in voices"
+                                ng-click="selectVoice($index)"
+                                ng-show="!isMale && voice.Gender == 'Female'">
+                                {{voice.Name}} ({{voice.LanguageName}})
+                            </div>
+                            <div class="dropDownItem" 
+                                ng-repeat="voice in voices"
+                                ng-click="selectVoice($index)"
+                                ng-show="isMale && voice.Gender == 'Male'">
+                                {{voice.Name}} ({{voice.LanguageName}})
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- display the selected voice -->
+                <div class="col-sm-5">
+                    Selected Voice: <br/>
+                    <span class="displayVoiceName">
+                        {{voices[selectedIndex].Name}} ({{voices[selectedIndex].LanguageName}})
+                    </span>
+                </div>
+            </div> <!-- end voice selection row -->
+
+
             <!-- user input text area -->
             <textarea ng-model="text" 
                 class="textInput boxShadow"
@@ -379,7 +559,7 @@
             <div class="row">
                 <div class="col-sm-6" style="padding-left:0;">
                     <!-- synthesize button -->
-                    <button type="button" class="btn btn-success btn-lg btn-block largeButton" ng-click="synthesize()" ng-disabled="text.length==0">
+                    <button type="button" class="btn btn-success btn-lg btn-block largeButton" ng-click="synthesize()">
                         <i class="fa fa-volume-up" aria-hidden="true"></i>
                         &ensp;Speak
                     </button>
@@ -391,7 +571,7 @@
                         &ensp;Clear
                     </button>
                 </div>
-                <div class="col-sm-3">
+                <div class="col-sm-3" style="padding-right:0;">
                     <!-- clear text button -->
                     <button type="button" class="btn btn-primary btn-lg btn-block largeButton" ng-click="save()" ng-disabled="text.length==0">
                         <i class="fa fa-floppy-o" aria-hidden="true"></i>
@@ -400,20 +580,41 @@
                 </div>
             </div> <!-- end action button row -->
         </div>
-        <div class="col-sm-4" class="historyContainer">
+        <div class="col-sm-4" id="historyContainer">
             <button type="button" 
-                class="btn btn-secondary btn-lg btn-block" 
+                class="btn btn-secondary btn-lg btn-block historyButton" 
                 ng-repeat="entry in history"
-                style="background-color: #f9f9f9;">
+                ng-click="clickHistory(entry)">
+                {{entry}}
+            </button>
+        </div>
+        <div class="col-sm-12" style="border-bottom: 1px solid #eee;margin-bottom: 10px;"></div>
+        <div class="col-sm-4" ng-repeat="entry in saved" >
+            <button type="button" 
+                class="btn btn-secondary btn-lg btn-block historyButton" 
+                ng-click="clickHistory(entry)">
                 {{entry}}
             </button>
         </div>
     </div>
 
-
+    <div id="toast">
+        <i class="fa fa-commenting-o" aria-hidden="true"></i>
+        &ensp; {{toastMessage}}
+    </div>
 
     <!-- audio element: does not display anything -->
     <audio id="player"></audio>
+
+    <ul class='savedPhrases'>
+        <li>First</li>
+        <li>Second</li>
+        <li>Third</li>
+    </ul>
+
+
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery-sortable/0.9.13/jquery-sortable-min.js"></script>
+
 
 </body>
 
