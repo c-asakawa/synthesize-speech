@@ -5,14 +5,17 @@
     <!-- Angular Material style sheet -->
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
-    <link href="https://gitcdn.github.io/bootstrap-toggle/2.2.2/css/bootstrap-toggle.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://gitcdn.github.io/bootstrap-toggle/2.2.2/css/bootstrap-toggle.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/angular-drag-and-drop-lists/2.1.0/angular-drag-and-drop-lists.min.js">
 
     <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.5/angular.min.js"></script>
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/angular-local-storage/0.7.1/angular-local-storage.min.js"></script>
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
 
     <script type="text/javascript" src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
-    <script src="https://gitcdn.github.io/bootstrap-toggle/2.2.2/js/bootstrap-toggle.min.js"></script>
+    <script type="text/javascript" src="https://gitcdn.github.io/bootstrap-toggle/2.2.2/js/bootstrap-toggle.min.js"></script>
+
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/angular-drag-and-drop-lists/2.1.0/angular-drag-and-drop-lists.js"></script>
 
     <script>
 
@@ -31,12 +34,16 @@
                 'pcm': 'audio/wave; codecs=1'
             };
             var maxHistoryCount = 100;
+            var textTimeout = 1000 * 5;
+            var savedPhrasesObject = [];
+
 
             var defaultPhrases = [
-                'Hi, how are you doing?',
-                'You are the best child, I love you.',
-                'chris cross apple sauce peanut butter toast'
-            ];
+                ['Hi, how are you doing?', 'You are the best child, I love you.'],
+                ['Chris cross apple sauce peanut butter toast'],
+                ['Testing', 'hi', 'hello'],
+            ]
+
 
             $scope.selectedIndex = 0;
             $scope.isMale = false;
@@ -52,6 +59,7 @@
             // init the application
             initApp();
 
+
             $scope.clear = function() { $scope.text = ''; }
 
             $scope.selectVoice = function(index) { 
@@ -60,9 +68,10 @@
                 // localStorageService.set('polly', localStorage);   
             }
             
-            $scope.synthesize = function(dontAdd) {
-                dontAdd = dontAdd == true ? true : false;
+            $scope.synthesize = function(newText) {
+                newText = newText == true ? true : false;
                 var selectedVoice = $scope.voices[$scope.selectedIndex].Id;
+                var textSnapShot = angular.copy($scope.text);
                 // we can only sythesize if we have valid params, throw toast on invalid params
                 if ($scope.text.length == 0) {
                     throwToast('Enter some text, so I can turn it to speech.')
@@ -76,12 +85,15 @@
                     throwToast('This Browser does not support this app.')
                     return;
                 }
-
-
-                console.log('selectedVoice', selectedVoice);
-                if (!dontAdd) {
+                // console.log('selectedVoice', selectedVoice);
+                if (!newText) {
                     addToHistory();
                 }
+                $timeout(function() {
+                    if (textSnapShot == $scope.text) {
+                        $scope.text = '';
+                    }
+                }, textTimeout);
 
                 // Point the player to the streaming server
                 player.src = '/read?voiceId=' +
@@ -106,8 +118,15 @@
                 $scope.text = entry;
                 $scope.synthesize(true);
             }
+            $scope.toggleDragDrop = function() {
+                console.log('toggled drag drop');
+                $("ul.savedPhrases").sortable("disable");
+                console.log('savedPhrasesObject:', savedPhrasesObject)
+                // savedPhrasesObject.children
+            }
 
             function initApp() {
+
                 /* init toggle and toggle event listener */
                 $(function() {
                     // init the toggle
@@ -123,7 +142,7 @@
 
                     var adjustment;
 
-                    $("ul.savedPhrases").sortable({
+                    savedPhrasesObject = $("ul.savedPhrases").sortable({
                       group: 'savedPhrases',
                       pullPlaceholder: false,
                       // animation on drop
@@ -136,6 +155,8 @@
                           $clonedItem.detach();
                           _super($item, container);
                         });
+
+                        updateSaveOrder();
                       },
 
                       // set $item relative to cursor position
@@ -157,6 +178,7 @@
                         });
                       }
                     });
+                    console.log('savedPhrasesObject:', savedPhrasesObject);
 
 
 
@@ -204,6 +226,11 @@
                         history: [],
                         saved: defaultPhrases,
                     }
+
+                    $scope.history = history;
+                    $scope.saved = defaultPhrases;
+
+                    // set the new default local storage object
                     localStorageService.set('polly', $scope.localStorage);
                 }
                 // use the storage object to set up the env.
@@ -221,8 +248,7 @@
                     // $scope.$apply();
                 }
                 $scope.history = $scope.localStorage.history;
-                $scope.saved = $scope.localStorage.saved;
-                
+                $scope.saved = $scope.localStorage.saved;                
             }
 
             function addToHistory() {
@@ -240,8 +266,64 @@
                     $scope.history.splice(-1, 1);
                 }
 
-                localStorageService.set('polly', $scope.localStorage);   
+                localStorageService.set('polly', $scope.localStorage);
                 // console.log('history:', $scope.history);
+            }
+
+            $scope.save = function() { 
+                // dont proceed if the text is already saved.
+                if (checkSaveDupes()) {
+                    throwToast('This phrase has already been saved.')
+                    return;
+                }
+
+                console.log('adding to save object', $scope.saved);
+                var minLength = Math.min($scope.saved[0].length, $scope.saved[1].length, $scope.saved[2].length);
+                // add it to the first column that matches the min length
+                for(var i=0; i < $scope.saved.length; i++) {
+                    if ($scope.saved[i].length == minLength) {
+                        $scope.saved[i].push($scope.text);
+                        break;
+                    }
+                }
+                $scope.clear();
+                // $scope.localStorage.saved = $scope.saved;
+                localStorageService.set('polly', $scope.localStorage);
+
+
+            }
+
+            function checkSaveDupes() {
+                // loop through the columns
+                for (var i=0; i < $scope.saved.length; i++) {
+                    for (var j=0; j < $scope.saved[i].length; j++) {
+                        if ($scope.saved[i][j] == $scope.text) {
+                            console.log('dupe found');
+                            return true;
+                        }
+                    }
+                }
+                return false;
+            }
+
+            function updateSaveOrder() {
+                console.log('updateSaveOrder');
+                var savedList = [];
+                // loop through all three columns
+                for (var i=0; i < savedPhrasesObject.length; i++) {
+                    savedList[i] = [];
+                    // loop through all the entries in each column
+                    for (var j=0; j < savedPhrasesObject[i].children.length; j++) {
+                        var text = savedPhrasesObject[i].children[j].innerText;
+                        if (text.length > 0) {
+                            console.log('adding text to saved list', text);
+                            savedList[i].push(text);
+                        }
+                    }
+                }
+                // save the new order to local storage
+                $scope.localStorage.saved = savedList;
+                localStorageService.set('polly', $scope.localStorage);
             }
 
             function throwToast(message) {
@@ -396,13 +478,14 @@
             max-height: 370px;
             overflow: auto;
         }
-        .historyButton {
+        .phraseButton {
             background-color: #f9f9f9;
             font-size: 12px;
             white-space: normal;
             text-align: left;
             max-height: 95px;
             overflow: auto;
+            border: 1px solid #CCC;
         }
         .boxShadow {
             -webkit-box-shadow: 0px 5px 10px 0px rgba(0,0,0,0.5);
@@ -445,50 +528,58 @@
             from {top: 20px; opacity: 1;}
             to {top: 0; opacity: 0;}
         }
-        ul { list-style-type:none; padding:0; margin:0;}
         body.dragging, body.dragging * {
             cursor: move !important;
         }
 
-body.dragging, body.dragging * {
-  cursor: move !important;
-}
-.dragged {
-  position: absolute;
-  top: 0;
-  opacity: 0.5;
-  z-index: 2000;
-}
-ul.vertical {
-  margin: 0 0 9px 0;
-  min-height: 10px;
-}
-li {
-    display: block;
-    margin: 5px;
-    padding: 5px;
-    border: 1px solid #CCC;
-    color: green;
-    background: #eee;
-}
-li.placeholder {
-    position: relative;
-    margin: 0;
-    padding: 0;
-    border: none;
-}
-ul.savedPhrases li.placeholder:before {
-    position: absolute;
-    content: "";
-    width: 0;
-    height: 0;
-    margin-top: -5px;
-    left: -5px;
-    top: -4px;
-    border: 5px solid transparent;
-    border-left-color: red;
-    border-right: none;
-}
+        ul { list-style-type:none; padding:0; margin:0;}
+        body.dragging, body.dragging * {
+          cursor: move !important;
+        }
+        .dragged {
+          position: absolute;
+          top: 0;
+          opacity: 0.5;
+          z-index: 2000;
+        }
+        ul.vertical {
+          margin: 0 0 9px 0;
+          min-height: 10px;
+        }
+        li {
+            display: block;
+            margin: 5px 0;
+            padding: 9px 12px;
+            background: #eee;
+            width: 100%;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        li.placeholder {
+            position: relative;
+            margin: 0;
+            padding: 0;
+            border: none;
+        }
+        ul.savedPhrases li.placeholder:before {
+            position: absolute;
+            content: "";
+            width: 0;
+            height: 0;
+            margin-top: -5px;
+            left: -5px;
+            top: -4px;
+            border: 5px solid transparent;
+            border-left-color: red;
+            border-right: none;
+        }
+        .noSelect {
+            -webkit-user-select: none; /* Safari */        
+            -moz-user-select: none; /* Firefox */
+            -ms-user-select: none; /* IE10+/Edge */
+            user-select: none; /* Standard */
+        }
+
 
 
     </style>
@@ -573,7 +664,7 @@ ul.savedPhrases li.placeholder:before {
                 </div>
                 <div class="col-sm-3" style="padding-right:0;">
                     <!-- clear text button -->
-                    <button type="button" class="btn btn-primary btn-lg btn-block largeButton" ng-click="save()" ng-disabled="text.length==0">
+                    <button type="button" class="btn btn-primary btn-lg btn-block largeButton" ng-click="save(text)" ng-disabled="text.length==0">
                         <i class="fa fa-floppy-o" aria-hidden="true"></i>
                         &ensp;Save
                     </button>
@@ -582,20 +673,31 @@ ul.savedPhrases li.placeholder:before {
         </div>
         <div class="col-sm-4" id="historyContainer">
             <button type="button" 
-                class="btn btn-secondary btn-lg btn-block historyButton" 
+                class="btn btn-secondary btn-lg btn-block phraseButton" 
                 ng-repeat="entry in history"
                 ng-click="clickHistory(entry)">
                 {{entry}}
             </button>
         </div>
         <div class="col-sm-12" style="border-bottom: 1px solid #eee;margin-bottom: 10px;"></div>
-        <div class="col-sm-4" ng-repeat="entry in saved" >
-            <button type="button" 
-                class="btn btn-secondary btn-lg btn-block historyButton" 
-                ng-click="clickHistory(entry)">
-                {{entry}}
+
+        <div class="col-sm-11">
+            <div class="row">
+                <ul class='col-sm-4 savedPhrases' id="savedPhrases" ng-repeat="column in saved">
+                    <li ng-repeat="text in column" 
+                        class="phraseButton noSelect" 
+                        ng-click="clickHistory(text)">
+                        {{text}}
+                    </li>
+                </ul>
+            </div>
+        </div>
+        <div class="col-sm-1">
+            <button class="btn btn-primary" ng-click="addToSaved()">
+                <i class="fa fa-pencil-square-o" aria-hidden="true" style="font-size:24px"></i>
             </button>
         </div>
+
     </div>
 
     <div id="toast">
@@ -606,11 +708,11 @@ ul.savedPhrases li.placeholder:before {
     <!-- audio element: does not display anything -->
     <audio id="player"></audio>
 
-    <ul class='savedPhrases'>
-        <li>First</li>
-        <li>Second</li>
-        <li>Third</li>
-    </ul>
+
+
+
+    
+    <button ng-click="toggleDragDrop()">toggle drag drop</button>
 
 
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery-sortable/0.9.13/jquery-sortable-min.js"></script>
