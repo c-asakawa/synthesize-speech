@@ -54,6 +54,8 @@
             $scope.history = [];
             $scope.saved = [];
             $scope.toastMessage = 'error';
+            $scope.previousText = '';
+            $scope.editMode = false;
 
 
             // init the application
@@ -89,8 +91,11 @@
                 if (!newText) {
                     addToHistory();
                 }
+                // clear out the text 
                 $timeout(function() {
                     if (textSnapShot == $scope.text) {
+                        // save the text for user redo button
+                        $scope.previousText = textSnapShot;
                         $scope.text = '';
                     }
                 }, textTimeout);
@@ -124,6 +129,37 @@
                 console.log('savedPhrasesObject:', savedPhrasesObject)
                 // savedPhrasesObject.children
             }
+            $scope.redoLast = function() {
+                $scope.text = $scope.previousText;
+                $scope.previousText = '';
+            }
+            $scope.toggleEdit = function() {
+                // currently enabled, toggle it
+                if ($scope.editMode) {
+                    $("ul.savedPhrases").sortable("disabled");
+                    $scope.editMode = false;
+                }
+                else {
+                    $("ul.savedPhrases").sortable("enable");
+                    $scope.editMode = true;
+                }
+            }
+            $scope.removeSaved = function(column, index) {
+                console.log('removeSaved:', column, index, $scope.saved);
+                if(index > -1) {
+                    console.log('removing saved:', savedPhrasesObject)
+
+                    $scope.saved[column].splice(index, 1);
+                    // savedPhrasesObject[column].children.splice(index, 1);
+                }
+                // $scope.localStorage.saved = $scope.saved;
+                console.log('remove saved after:', $scope.saved);
+                console.log('remove localstor saved after:', $scope.localStorage.saved);
+                $scope.localStorage.saved = $scope.saved;
+                localStorageService.set('polly', $scope.localStorage);
+
+
+            }
 
             function initApp() {
 
@@ -145,6 +181,7 @@
                     savedPhrasesObject = $("ul.savedPhrases").sortable({
                       group: 'savedPhrases',
                       pullPlaceholder: false,
+                      disabled: true,
                       // animation on drop
                       onDrop: function ($item, container, _super) {
                         var $clonedItem = $('<li/>').css({height: 0});
@@ -179,9 +216,7 @@
                       }
                     });
                     console.log('savedPhrasesObject:', savedPhrasesObject);
-
-
-
+                    $("ul.savedPhrases").sortable("disable");
                 });
 
 
@@ -245,10 +280,10 @@
                         $scope.isMale = true;
                         $('#genderToggle').bootstrapToggle('toggle');
                     }
+                    $scope.history = $scope.localStorage.history;
+                    $scope.saved = $scope.localStorage.saved;                
                     // $scope.$apply();
                 }
-                $scope.history = $scope.localStorage.history;
-                $scope.saved = $scope.localStorage.saved;                
             }
 
             function addToHistory() {
@@ -307,7 +342,7 @@
             }
 
             function updateSaveOrder() {
-                console.log('updateSaveOrder');
+                console.log('updateSaveOrder:', savedPhrasesObject)
                 var savedList = [];
                 // loop through all three columns
                 for (var i=0; i < savedPhrasesObject.length; i++) {
@@ -316,13 +351,14 @@
                     for (var j=0; j < savedPhrasesObject[i].children.length; j++) {
                         var text = savedPhrasesObject[i].children[j].innerText;
                         if (text.length > 0) {
-                            console.log('adding text to saved list', text);
                             savedList[i].push(text);
                         }
                     }
                 }
                 // save the new order to local storage
                 $scope.localStorage.saved = savedList;
+
+                console.log('updating localStorage', $scope.localStorage)
                 localStorageService.set('polly', $scope.localStorage);
             }
 
@@ -472,11 +508,18 @@
 
         .textInput {
             width: 100%;
-            height: 200px
+            height: 200px;
+            resize: none;
+            border-radius: 6px;
+            border-color: #eee;
+            padding: 10px;
+            font-size: 18px;
         }
         #historyContainer {
-            max-height: 370px;
+            max-height: 344px;
             overflow: auto;
+            padding-top: 5px;
+            padding-bottom: 5px;
         }
         .phraseButton {
             background-color: #f9f9f9;
@@ -486,6 +529,11 @@
             max-height: 95px;
             overflow: auto;
             border: 1px solid #CCC;
+        }
+        .redoButton {
+            position: absolute;
+            right: 20px;
+            margin-top: 5px;
         }
         .boxShadow {
             -webkit-box-shadow: 0px 5px 10px 0px rgba(0,0,0,0.5);
@@ -580,6 +628,34 @@
             user-select: none; /* Standard */
         }
 
+        .navToolBar {
+            margin-bottom: 0;
+            background-color: #337ab7;
+            height: 27px;
+            min-height: 20px;
+            color: #FFF;
+            border-radius: 6px 6px 0px 0px;
+            -moz-border-radius: 6px 6px 0px 0px;
+            -webkit-border-radius: 6px 6px 0px 0px;
+            border: 0px solid #000000;
+        }
+        .historyHelpMessage {
+            top: 30px;
+            color: #aaa;
+            font-size: 16px;
+        }
+        .roundedBottom {
+            border-radius: 0px 0px 6px 6px;
+            -moz-border-radius: 0px 0px 6px 6px;
+            -webkit-border-radius: 0px 0px 6px 6px;
+            border: 1px solid #ccc;
+        }
+        .lockIcon {
+            position: absolute;
+            right: 7px;
+            top: 7px;
+            font-size: 18px;
+        }
 
 
     </style>
@@ -641,11 +717,18 @@
 
 
             <!-- user input text area -->
+            <button class="btn redoButton" 
+                ng-if="previousText.length > 0"
+                ng-click="redoLast()">
+                <i class="fa fa-undo" aria-hidden="true" style="font-size:20px"></i>
+            </button>
             <textarea ng-model="text" 
                 class="textInput boxShadow"
                 ng-keydown="$event.keyCode == 13 && pressEnterOnText($event);"
                 placeholder="type what you want to say into here">
             </textarea>
+
+
                 <!-- action button row -->
             <div class="row">
                 <div class="col-sm-6" style="padding-left:0;">
@@ -671,32 +754,64 @@
                 </div>
             </div> <!-- end action button row -->
         </div>
-        <div class="col-sm-4" id="historyContainer">
+        <nav class="navbar col-sm-4 navToolBar"> 
+            <i class="fa fa-clock-o" aria-hidden="true" style="font-size:18px;margin-top: 4px;"></i>
+            <span style="font-size:17px;">&ensp; history</span> 
+        </nav>
+        <div class="col-sm-4 roundedBottom" id="historyContainer" style="height:344px;">
+            
+            <span ng-if="history.length == 0" class="historyHelpMessage noSelect">
+                Enter some text to turn into speech and it will show up here
+            </span>
+
             <button type="button" 
                 class="btn btn-secondary btn-lg btn-block phraseButton" 
                 ng-repeat="entry in history"
                 ng-click="clickHistory(entry)">
                 {{entry}}
             </button>
+
+            
         </div>
         <div class="col-sm-12" style="border-bottom: 1px solid #eee;margin-bottom: 10px;"></div>
 
-        <div class="col-sm-11">
-            <div class="row">
-                <ul class='col-sm-4 savedPhrases' id="savedPhrases" ng-repeat="column in saved">
+        <nav class="navbar col-sm-12 navToolBar"> 
+            <i class="fa fa-floppy-o" aria-hidden="true" style="font-size:18px;margin-top: 4px;"></i>
+            <span style="font-size:17px;">&ensp; Saved Phrases</span> 
+
+            <button class="btn btn-primary" ng-click="toggleEdit()" style="max-height: 27px;float: right;">
+                <i class="fa fa-pencil-square-o" aria-hidden="true" style="font-size:16px;margin-right: 5px"></i>
+            </button>
+            <div class="lockIcon">
+                <i class="fa fa-lock" aria-hidden="true" ng-show="!editMode"></i>
+                <i class="fa fa-unlock" aria-hidden="true" ng-show="editMode"></i>
+            </div>
+        </nav>
+        <div class="col-sm-12 roundedBottom">
+            <div class="row" style="margin: 5px 0;">
+                <ul class='col-sm-4 savedPhrases' 
+                    id="savedPhrases" 
+                    ng-repeat="column in saved"
+                    ng-init="columnNumber = $index">
                     <li ng-repeat="text in column" 
                         class="phraseButton noSelect" 
-                        ng-click="clickHistory(text)">
+                        ng-click="!editMode && clickHistory(text)">
                         {{text}}
+
+                        <button ng-show="editMode" 
+                            ng-click="removeSaved(columnNumber, $index)"
+                            style="float: right;font-size: 16px;">
+                            <i class="fa fa-times" aria-hidden="true"></i>
+                        </button>
                     </li>
                 </ul>
             </div>
         </div>
-        <div class="col-sm-1">
+<!--         <div class="col-sm-1">
             <button class="btn btn-primary" ng-click="addToSaved()">
                 <i class="fa fa-pencil-square-o" aria-hidden="true" style="font-size:24px"></i>
             </button>
-        </div>
+        </div> -->
 
     </div>
 
@@ -707,13 +822,6 @@
 
     <!-- audio element: does not display anything -->
     <audio id="player"></audio>
-
-
-
-
-    
-    <button ng-click="toggleDragDrop()">toggle drag drop</button>
-
 
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery-sortable/0.9.13/jquery-sortable-min.js"></script>
 
