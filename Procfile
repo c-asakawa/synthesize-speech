@@ -1,1 +1,1 @@
-web: python server.py -p $PORT
+web: python server.py -p $PORT --host https://speech-synthesizer.herokuapp.com/
