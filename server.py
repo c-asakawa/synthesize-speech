@@ -56,7 +56,7 @@ HTTP_STATUS = {"OK": ResponseStatus(code=200, message="OK"),
                "BAD_REQUEST": ResponseStatus(code=400, message="Bad request"),
                "NOT_FOUND": ResponseStatus(code=404, message="Not found"),
                "INTERNAL_SERVER_ERROR": ResponseStatus(code=500, message="Internal server error")}
-PROTOCOL = "https"
+PROTOCOL = "http"
 ROUTE_INDEX = "/index.html"
 ROUTE_VOICES = "/voices"
 ROUTE_READ = "/read"
@@ -64,7 +64,7 @@ ROUTE_READ = "/read"
 
 # Create a client using the credentials and region defined in the adminuser
 # section of the AWS credentials and configuration files
-session = Session(profile_name="adminuser")
+session = Session(profile_name="default")
 polly = session.client("polly")
 
 
