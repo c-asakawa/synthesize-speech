@@ -259,7 +259,7 @@ cli = ArgumentParser(description='Example Python Application')
 cli.add_argument(
     "-p", "--port", type=int, metavar="PORT", dest="port", default=3320)
 cli.add_argument(
-    "--host", type=str, metavar="HOST", dest="host", default="localhost")
+    "--host", type=str, metavar="HOST", dest="host", default="speech-synthesizer.herokuapp.com")
 arguments = cli.parse_args()
 
 # If the module is invoked directly, initialize the application
