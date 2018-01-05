@@ -208,7 +208,7 @@
                       }
                     });
                     console.log('savedPhrasesObject:', savedPhrasesObject);
-                    $("ul.savedPhrases").sortable("disable");
+                    // $("ul.savedPhrases").sortable("disable");
                 });
 
 
@@ -457,6 +457,7 @@
             height: 55px;
             font-size: 16px;
             font-weight: bold;
+            margin-bottom: 5px;
         }
         .row {
             margin: 20px 0;
@@ -526,6 +527,7 @@
             position: absolute;
             right: 20px;
             margin-top: 5px;
+            background-color: transparent;
         }
         .boxShadow {
             -webkit-box-shadow: 0px 5px 10px 0px rgba(0,0,0,0.5);
@@ -664,6 +666,11 @@
         .toggle-group > label {
             line-height: 5px !important;
         }
+        .actionButtonCol {
+            padding: 0;
+            margin-right: 10px;
+        }
+
     </style>
 </head>
 
@@ -671,11 +678,11 @@
     
     <!-- user input text area row -->
     <div class="row">
-        <div class="col-sm-8">
+        <div class="col-sm-8" style="padding-left:0px;">
 
             <div class="row">
                 <!-- gender toggle -->
-                <div class="col-sm-7" style="padding-left:0;"> 
+                <div class="col-sm-6" style="padding-left:0;"> 
                     <input type="checkbox" checked 
                         id="genderToggle"
                         data-toggle="toggle" 
@@ -714,10 +721,10 @@
                     </div>
                 </div>
                 <!-- display the selected voice -->
-                <div class="col-sm-5" style="padding-top: 6px;">
+                <div class="col-sm-6" style="padding-top: 6px;">
                     <span class="displayVoiceName">
-<!--                         <i class="fa fa-male" aria-hidden="true" ng-show="isMale"></i>
-                        <i class="fa fa-female" aria-hidden="true" ng-show="!isMale"></i> -->
+                        <i class="fa fa-male" aria-hidden="true" ng-show="voices[selectedIndex].Gender == 'Male'"></i>
+                        <i class="fa fa-female" aria-hidden="true" ng-show="voices[selectedIndex].Gender == 'Female'"></i>
                         &ensp;
                         {{voices[selectedIndex].Name}} ({{voices[selectedIndex].LanguageName}})
                     </span>
@@ -740,21 +747,21 @@
 
                 <!-- action button row -->
             <div class="row">
-                <div class="col-sm-6" style="padding-left:0;">
+                <div class="col-sm-5 actionButtonCol">
                     <!-- synthesize button -->
                     <button type="button" class="btn btn-success btn-lg btn-block largeButton" ng-click="synthesize()">
                         <i class="fa fa-volume-up" aria-hidden="true"></i>
                         &ensp;Speak
                     </button>
                 </div>
-                <div class="col-sm-3">
+                <div class="col-sm-3 actionButtonCol">
                     <!-- clear text button -->
                     <button type="button" class="btn btn-danger btn-lg btn-block largeButton" ng-click="clear()" ng-disabled="text.length==0">
                         <i class="fa fa-ban" aria-hidden="true"></i>
                         &ensp;Clear
                     </button>
                 </div>
-                <div class="col-sm-3" style="padding-right:0;">
+                <div class="col-sm-3 actionButtonCol">
                     <!-- clear text button -->
                     <button type="button" class="btn btn-primary btn-lg btn-block largeButton" ng-click="save(text)" ng-disabled="text.length==0">
                         <i class="fa fa-floppy-o" aria-hidden="true"></i>
@@ -782,7 +789,6 @@
 
             
         </div>
-        <div class="col-sm-12" style="border-bottom: 1px solid #eee;margin-bottom: 10px;"></div>
 
         <nav class="navbar col-sm-12 navToolBar"> 
             <i class="fa fa-floppy-o" aria-hidden="true" style="font-size:18px;margin-top: 4px;"></i>
@@ -803,7 +809,7 @@
                     ng-repeat="column in saved"
                     ng-init="columnNumber = $index">
                     <li ng-repeat="text in column" 
-                        class="phraseButton noSelect" 
+                        class="btn phraseButton noSelect" 
                         ng-click="!editMode && clickHistory(text)">
                         {{text}}
 
