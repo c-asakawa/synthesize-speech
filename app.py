@@ -257,7 +257,7 @@ class ChunkedHTTPRequestHandler(BaseHTTPRequestHandler):
 # Define and parse the command line arguments
 cli = ArgumentParser(description='Example Python Application')
 cli.add_argument(
-    "-p", "--port", type=int, metavar="PORT", dest="port", default=8000)
+    "-p", "--port", type=int, metavar="PORT", dest="port", default=3320)
 cli.add_argument(
     "--host", type=str, metavar="HOST", dest="host", default="localhost")
 arguments = cli.parse_args()
