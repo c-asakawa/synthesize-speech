@@ -155,66 +155,12 @@
 
             function initApp() {
 
-                /* init toggle and toggle event listener */
-                $(function() {
-                    // init the toggle
-                    $('#genderToggle').bootstrapToggle();
-
-                    // event to watch changes in the toggle.
-                    $('#genderToggle').change(function() {
-                        console.log('toggled:', $(this).prop('checked'));
-                        $scope.isMale = !$(this).prop('checked');
-                        $scope.$apply();
-                    });
-
-
-                    var adjustment;
-
-                    savedPhrasesObject = $("ul.savedPhrases").sortable({
-                      group: 'savedPhrases',
-                      pullPlaceholder: false,
-                      disabled: true,
-                      // animation on drop
-                      onDrop: function ($item, container, _super) {
-                        var $clonedItem = $('<li/>').css({height: 0});
-                        $item.before($clonedItem);
-                        $clonedItem.animate({'height': $item.height()});
-
-                        $item.animate($clonedItem.position(), function  () {
-                          $clonedItem.detach();
-                          _super($item, container);
-                        });
-
-                        updateSaveOrder();
-                      },
-
-                      // set $item relative to cursor position
-                      onDragStart: function ($item, container, _super) {
-                        var offset = $item.offset(),
-                            pointer = container.rootGroup.pointer;
-
-                        adjustment = {
-                          left: pointer.left - offset.left,
-                          top: pointer.top - offset.top
-                        };
-
-                        _super($item, container);
-                      },
-                      onDrag: function ($item, position) {
-                        $item.css({
-                          left: position.left - adjustment.left,
-                          top: position.top - adjustment.top
-                        });
-                      }
-                    });
-                    console.log('savedPhrasesObject:', savedPhrasesObject);
-                    // $("ul.savedPhrases").sortable("disable");
-                });
-
-
                 getVoices(function() {
                     initLocalStorage();
                     $scope.$apply();
+                    initToggle();
+                    initDragDrop();
+
                 });
                 // update the local storage
                 $interval(function() {
@@ -276,6 +222,65 @@
                     $scope.saved = $scope.localStorage.saved;                
                     // $scope.$apply();
                 }
+            }
+
+            function initToggle() {
+                /* init toggle and toggle event listener */
+                $(function() {
+                    // init the toggle
+                    $('#genderToggle').bootstrapToggle();
+
+                    // event to watch changes in the toggle.
+                    $('#genderToggle').change(function() {
+                        console.log('toggled:', $(this).prop('checked'));
+                        $scope.isMale = !$(this).prop('checked');
+                        $scope.$apply();
+                    });
+                });
+            }
+            function initDragDrop() {
+                /* toggle event listener */
+                $(function() {
+                    savedPhrasesObject = $("ul.savedPhrases").sortable({
+                      group: 'savedPhrases',
+                      pullPlaceholder: false,
+                      disabled: true,
+                      // animation on drop
+                      onDrop: function ($item, container, _super) {
+                        var $clonedItem = $('<li/>').css({height: 0});
+                        $item.before($clonedItem);
+                        $clonedItem.animate({'height': $item.height()});
+
+                        $item.animate($clonedItem.position(), function  () {
+                          $clonedItem.detach();
+                          _super($item, container);
+                        });
+
+                        updateSaveOrder();
+                      },
+
+                      // set $item relative to cursor position
+                      onDragStart: function ($item, container, _super) {
+                        var offset = $item.offset(),
+                            pointer = container.rootGroup.pointer;
+
+                        adjustment = {
+                          left: pointer.left - offset.left,
+                          top: pointer.top - offset.top
+                        };
+
+                        _super($item, container);
+                      },
+                      onDrag: function ($item, position) {
+                        $item.css({
+                          left: position.left - adjustment.left,
+                          top: position.top - adjustment.top
+                        });
+                      }
+                    });
+                    console.log('savedPhrasesObject:', savedPhrasesObject);
+                    $("ul.savedPhrases").sortable("disable");
+                });
             }
 
             function addToHistory() {
@@ -670,6 +675,13 @@
             padding: 0;
             margin-right: 10px;
         }
+        .dragHandle {
+            font-size: 16px;
+            margin: -4px;
+            margin-top: 2px;
+            padding-right: 10px;
+            color: #ccc;
+        }
 
     </style>
 </head>
@@ -795,7 +807,7 @@
             <span style="font-size:17px;">&ensp; Saved Phrases</span> 
 
             <button class="btn btn-primary" ng-click="toggleEdit()" style="max-height: 27px;float: right;">
-                <i class="fa fa-pencil-square-o" aria-hidden="true" style="font-size:16px;margin-right: 5px"></i>
+                <i class="fa fa-wrench" aria-hidden="true" style="font-size:16px;margin-right: 5px"></i>
             </button>
             <div class="lockIcon">
                 <i class="fa fa-lock" aria-hidden="true" ng-show="!editMode"></i>
@@ -811,6 +823,7 @@
                     <li ng-repeat="text in column" 
                         class="btn phraseButton noSelect" 
                         ng-click="!editMode && clickHistory(text)">
+                        <i class="fa fa-bars dragHandle" aria-hidden="true" ng-show="editMode"></i>
                         {{text}}
 
                         <button ng-show="editMode" 
