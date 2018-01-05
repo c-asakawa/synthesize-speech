@@ -147,18 +147,10 @@
             $scope.removeSaved = function(column, index) {
                 console.log('removeSaved:', column, index, $scope.saved);
                 if(index > -1) {
-                    console.log('removing saved:', savedPhrasesObject)
-
                     $scope.saved[column].splice(index, 1);
-                    // savedPhrasesObject[column].children.splice(index, 1);
                 }
-                // $scope.localStorage.saved = $scope.saved;
-                console.log('remove saved after:', $scope.saved);
-                console.log('remove localstor saved after:', $scope.localStorage.saved);
                 $scope.localStorage.saved = $scope.saved;
                 localStorageService.set('polly', $scope.localStorage);
-
-
             }
 
             function initApp() {
@@ -481,15 +473,16 @@
         .dropDownToggle {
             font-size: 16px;
             font-weight: bold;
-            height: 55px;
+            /*height: 55px;*/
         }
         .dropDownItem {
             width: 100%;
             display: block;
             margin-left: 2px;
-            padding: 5px;
+            padding: 16px;
             text-decoration: none;
             color: #000;
+            height: 50px;
         }
         .dropDownItem:hover {
             background-color: #eee;
@@ -502,13 +495,12 @@
             color: #000;
         }
         .displayVoiceName {
-            font-size: 16px;
-            font-weight: bold;
+            font-size: 18px;
         }
 
         .textInput {
             width: 100%;
-            height: 200px;
+            height: 220px;
             resize: none;
             border-radius: 6px;
             border-color: #eee;
@@ -657,7 +649,21 @@
             font-size: 18px;
         }
 
+        .btn-female {
+            background-color: #ffbad2;
+            color: #fff;
+        }
 
+        .btn-male {
+            background-color: #89cff0;
+            color: #fff;
+        }
+        .toggle {
+            max-height: 36px !important;
+        }
+        .toggle-group > label {
+            line-height: 5px !important;
+        }
     </style>
 </head>
 
@@ -669,18 +675,19 @@
 
             <div class="row">
                 <!-- gender toggle -->
-                <div class="col-sm-3" style="padding-left:0;"> 
+                <div class="col-sm-7" style="padding-left:0;"> 
                     <input type="checkbox" checked 
                         id="genderToggle"
                         data-toggle="toggle" 
-                        data-size="small" 
+                        data-size="mini" 
                         data-on="Female" 
                         data-off="Male" 
-                        data-onstyle="info" 
-                        data-offstyle="info"/>
-                </div>
-                <!-- select voice dropdown -->
-                <div id="voiceSelection" class="col-sm-4">
+                        data-onstyle="female" 
+                        data-offstyle="male"
+                        data-height="50"
+                        style="max-height: 36px;"/>
+
+                    <!-- select voice dropdown -->
                     <div class="btn-group">
                         <button type="button" 
                             class="btn btn-primary dropDownToggle" 
@@ -707,9 +714,11 @@
                     </div>
                 </div>
                 <!-- display the selected voice -->
-                <div class="col-sm-5">
-                    Selected Voice: <br/>
+                <div class="col-sm-5" style="padding-top: 6px;">
                     <span class="displayVoiceName">
+<!--                         <i class="fa fa-male" aria-hidden="true" ng-show="isMale"></i>
+                        <i class="fa fa-female" aria-hidden="true" ng-show="!isMale"></i> -->
+                        &ensp;
                         {{voices[selectedIndex].Name}} ({{voices[selectedIndex].LanguageName}})
                     </span>
                 </div>
