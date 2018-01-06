@@ -108,13 +108,19 @@ class ChunkedHTTPRequestHandler(BaseHTTPRequestHandler):
         print(u"[START]: Received GET for %s with query: %s" % (path, query))
 
         try:
+            print 'handeling path:'
+            print path
+
             # Handle the possible request paths
-            if path == ROUTE_INDEX:
-                response = self.route_index(path, query)
+            if path == ROUTE_INDEX or path == '/':
+                response = self.route_index(ROUTE_INDEX, query)
             elif path == ROUTE_VOICES:
                 response = self.route_voices(path, query)
             elif path == ROUTE_READ:
                 response = self.route_read(path, query)
+            elif path == "/test":
+                print "hit test path"
+                response = self.route_index(ROUTE_INDEX, query)
             else:
                 response = self.route_not_found(path, query)
 
