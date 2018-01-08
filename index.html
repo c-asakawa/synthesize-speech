@@ -58,6 +58,7 @@
             $scope.toastMessage = 'error';
             $scope.previousText = '';
             $scope.editMode = false;
+            $scope.showVoiceMenu = false;
 
             // init the application
             initApp();
@@ -183,6 +184,14 @@
                 $timeout(function (){
                     $('#speechInput').focus();
                 }, 100);
+            }
+            $scope.isSmallViewport = function() {
+                if ($(window).width() < 768) {
+                    return true;
+                }
+            }
+            $scope.toggleVoiceMenu = function() { 
+                $scope.showVoiceMenu = !$scope.showVoiceMenu;
             }
 
             function initApp() {
@@ -713,7 +722,11 @@
             padding-right: 10px;
             color: #ccc;
         }
-
+        .menuToggleButton {
+            position: absolute;
+            right: 10px;
+            top: 10px;
+        }
     </style>
 </head>
 
@@ -721,9 +734,10 @@
     
     <!-- user input text area row -->
     <div class="row">
-        <div class="col-sm-8" style="padding-left:0px;">
 
-            <div class="row">
+        <div class="col-sm-8" style="padding-left:0px;">
+            <div ng-show="isSmallViewport() && !showVoiceMenu" style="padding:15px"></div>
+            <nav class="row navbar" ng-show="!isSmallViewport() || showVoiceMenu">
                 <!-- gender toggle -->
                 <div class="col-sm-6" style="padding-left:0;"> 
                     <input type="checkbox" checked 
@@ -772,7 +786,8 @@
                         {{voices[selectedIndex].Name}} ({{voices[selectedIndex].LanguageName}})
                     </span>
                 </div>
-            </div> <!-- end voice selection row -->
+                <!-- </div> -->
+            </nav> <!-- end voice selection row -->
 
 
             <!-- user input text area -->
@@ -879,6 +894,12 @@
         </div>
 
     </div>
+    <button class="btn btn-primary menuToggleButton" 
+        ng-show="isSmallViewport()"
+        ng-click="toggleVoiceMenu()">
+        <i class="fa fa-bars" ng-show="!showVoiceMenu" aria-hidden="true"></i>
+        <i class="fa fa-arrow-up" ng-show="showVoiceMenu" aria-hidden="true"></i>
+    </button>
 
     <div id="toast">
         <i class="fa fa-commenting-o" aria-hidden="true"></i>
