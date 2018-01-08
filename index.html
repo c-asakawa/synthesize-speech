@@ -156,6 +156,11 @@
                 $scope.localStorage.saved = $scope.saved;
                 localStorageService.set('polly', $scope.localStorage);
             }
+            $scope.focusInput = function() {
+                $timeout(function (){
+                    $('#speechInput').focus();
+                }, 100);
+            }
 
             function initApp() {
 
@@ -164,6 +169,7 @@
                     $scope.$apply();
                     initToggle();
                     initDragDrop();
+                    $scope.focusInput();
 
                 });
                 // update the local storage
@@ -187,6 +193,7 @@
                     }
                 }, 1000 * 3);
             }
+
 
             function initLocalStorage() {
                 $scope.localStorage = localStorageService.get('polly');
@@ -755,9 +762,12 @@
                 <i class="fa fa-undo" aria-hidden="true" style="font-size:20px"></i>
             </button>
             <textarea ng-model="text" 
+                id="speechInput"
                 class="textInput boxShadow"
                 ng-keydown="$event.keyCode == 13 && pressEnterOnText($event);"
-                placeholder="type what you want to say into here">
+                placeholder="type what you want to say into here"
+                ng-blur="focusInput()">
+                <span>Type what you want to say into here.</span>
             </textarea>
 
 
@@ -788,7 +798,7 @@
         </div>
         <nav class="navbar col-sm-4 navToolBar"> 
             <i class="fa fa-clock-o" aria-hidden="true" style="font-size:18px;margin-top: 4px;"></i>
-            <span style="font-size:17px;">&ensp; history</span> 
+            <span style="font-size:17px;">&ensp; History</span> 
         </nav>
         <div class="col-sm-4 roundedBottom" id="historyContainer" style="height:344px;">
             
