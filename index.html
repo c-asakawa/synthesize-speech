@@ -13,6 +13,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Ladda/1.0.5/ladda-themeless.min.css">
 
     <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.5/angular.min.js"></script>
+    <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.5/angular-animate.min.js"></script>
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/angular-local-storage/0.7.1/angular-local-storage.min.js"></script>
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
     <!-- <script type="text/javascript" src="jquery.ui.touch-punch.min.js"></script> -->
@@ -25,7 +26,7 @@
 
     <script>
         //Define an angular module for our app
-        var app = angular.module('pollyApp', ['LocalStorageModule', 'angular-ladda']);
+        var app = angular.module('pollyApp', ['ngAnimate', 'LocalStorageModule', 'angular-ladda']);
 
         app.controller('pollyController', function($scope, $timeout, $interval, localStorageService){
 
@@ -549,7 +550,7 @@
 
         .textInput {
             width: 100%;
-            height: 220px;
+            /*height: 220px;*/
             resize: none;
             border-radius: 6px;
             border-color: #eee;
@@ -557,7 +558,7 @@
             font-size: 18px;
         }
         #historyContainer {
-            max-height: 344px;
+            /*max-height: 344px;*/
             overflow: auto;
             padding-top: 5px;
             padding-bottom: 5px;
@@ -570,6 +571,8 @@
             max-height: 95px;
             overflow: auto;
             border: 1px solid #CCC;
+            min-height: 38px;
+            padding: 10px;
         }
         .redoButton {
             position: absolute;
@@ -651,6 +654,7 @@
             padding: 0;
             border: none;
         }
+        ul.savedPhrases { padding: 0; }
         ul.savedPhrases li.placeholder:before {
             position: absolute;
             content: "";
@@ -726,9 +730,51 @@
             color: #ccc;
         }
         .menuToggleButton {
-            position: absolute;
-            right: 10px;
-            top: 10px;
+            margin-bottom: 10px;
+        }
+        #voiceBar {
+            -webkit-transition:all linear 0.2s;
+            transition:all linear 0.s;
+        }
+        #voiceBar {
+            animation: 0.5s menuExpand;
+        }   
+        #voiceBar.ng-hide {
+            animation: 0.3s menuCollapse;
+        }
+        @keyframes menuExpand {
+            0% {
+                opacity: 0;
+                height: 0;
+                margin: 0;
+            }    
+            50% {
+                opacity: 0;
+                height: auto;
+                margin: 20px 0;
+            }
+            100% {
+                opacity: 1;
+                height: auto;
+                margin: 20px 0;
+            }
+        }
+        @keyframes menuCollapse {
+            0% {
+                opacity: 1;
+                height: auto;
+                margin: 20px 0;
+            }    
+            50% {
+                opacity: 0;
+                height: auto;
+                margin: 20px 0;
+            }
+            100% {
+                opacity: 0;
+                height: 0;
+                margin: 0;
+            }
         }
     </style>
 </head>
@@ -738,9 +784,16 @@
     <!-- user input text area row -->
     <div class="row">
 
+            <button class="btn btn-primary menuToggleButton" 
+                ng-show="isSmallViewport()"
+                ng-click="toggleVoiceMenu()">
+                <i class="fa fa-bars" ng-show="!showVoiceMenu" aria-hidden="true"></i>
+                <i class="fa fa-arrow-up" ng-show="showVoiceMenu" aria-hidden="true"></i>
+            </button>
+
         <div class="col-sm-8" style="padding-left:0px;">
-            <div ng-show="isSmallViewport() && !showVoiceMenu" style="padding:15px"></div>
-            <nav class="row navbar" ng-show="!isSmallViewport() || showVoiceMenu">
+            <!-- <div ng-show="isSmallViewport() && !showVoiceMenu" style="padding:15px"></div> -->
+            <nav id="voiceBar" class="row" ng-show="!isSmallViewport() || showVoiceMenu">
                 <!-- gender toggle -->
                 <div class="col-sm-6" style="padding-left:0;"> 
                     <input type="checkbox" checked 
@@ -792,7 +845,6 @@
                 <!-- </div> -->
             </nav> <!-- end voice selection row -->
 
-
             <!-- user input text area -->
             <button class="btn redoButton" 
                 ng-if="previousText.length > 0"
@@ -800,6 +852,7 @@
                 <i class="fa fa-undo" aria-hidden="true" style="font-size:20px"></i>
             </button>
             <textarea ng-model="text" 
+                ng-style="isSmallViewport() ? {'height': '120px'} : {'height': '220px'}"
                 id="speechInput"
                 class="textInput boxShadow"
                 ng-keydown="$event.keyCode == 13 && pressEnterOnText($event);"
@@ -842,7 +895,7 @@
             <i class="fa fa-clock-o" aria-hidden="true" style="font-size:18px;margin-top: 4px;"></i>
             <span style="font-size:17px;">&ensp; History</span> 
         </nav>
-        <div class="col-sm-4 roundedBottom" id="historyContainer" style="height:344px;">
+        <div class="col-sm-4 roundedBottom" id="historyContainer" ng-style="isSmallViewport() ? {'height': 'auto'} : {'height': '345px'}">
             
             <span ng-if="history.length == 0" class="historyHelpMessage noSelect">
                 Enter some text to turn into speech and it will show up here
@@ -897,12 +950,6 @@
         </div>
 
     </div>
-    <button class="btn btn-primary menuToggleButton" 
-        ng-show="isSmallViewport()"
-        ng-click="toggleVoiceMenu()">
-        <i class="fa fa-bars" ng-show="!showVoiceMenu" aria-hidden="true"></i>
-        <i class="fa fa-arrow-up" ng-show="showVoiceMenu" aria-hidden="true"></i>
-    </button>
 
     <div id="toast">
         <i class="fa fa-commenting-o" aria-hidden="true"></i>
