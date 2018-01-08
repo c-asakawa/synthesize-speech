@@ -182,7 +182,10 @@
             }
             $scope.focusInput = function() {
                 $timeout(function (){
+                    var x = window.scrollX;
+                    y = window.scrollY;
                     $('#speechInput').focus();
+                    window.scrollTo(x, y);
                 }, 100);
             }
             $scope.isSmallViewport = function() {
