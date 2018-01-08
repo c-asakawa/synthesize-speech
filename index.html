@@ -10,26 +10,26 @@
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
     <link rel="stylesheet" href="https://gitcdn.github.io/bootstrap-toggle/2.2.2/css/bootstrap-toggle.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/angular-drag-and-drop-lists/2.1.0/angular-drag-and-drop-lists.min.js">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Ladda/1.0.5/ladda-themeless.min.css">
 
     <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.5/angular.min.js"></script>
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/angular-local-storage/0.7.1/angular-local-storage.min.js"></script>
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
-    <script src="jquery.ui.touch-punch.min.js"></script>
-
+    <!-- <script type="text/javascript" src="jquery.ui.touch-punch.min.js"></script> -->
     <script type="text/javascript" src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
     <script type="text/javascript" src="https://gitcdn.github.io/bootstrap-toggle/2.2.2/js/bootstrap-toggle.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/Ladda/1.0.5/spin.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/Ladda/1.0.5/ladda.min.js"></script>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/angular-ladda/0.4.3/angular-ladda.min.js"></script>
 
-    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/angular-drag-and-drop-lists/2.1.0/angular-drag-and-drop-lists.js"></script>
 
     <script>
-
         //Define an angular module for our app
-        var app = angular.module('pollyApp', ['LocalStorageModule']);
+        var app = angular.module('pollyApp', ['LocalStorageModule', 'angular-ladda']);
 
         app.controller('pollyController', function($scope, $timeout, $interval, localStorageService){
 
             var initDefault = false;
-
             // Mapping of the OutputFormat parameter of the SynthesizeSpeech API
             // and the audio format strings understood by the browser
             var AUDIO_FORMATS = {
@@ -40,15 +40,11 @@
             var maxHistoryCount = 100;
             var textTimeout = 1000 * 5;
             var savedPhrasesObject = [];
-
-
             var defaultPhrases = [
                 ['Hi, how are you doing?', 'You are the best child, I love you.'],
                 ['Chris cross apple sauce peanut butter toast'],
                 ['Testing', 'hi', 'hello'],
             ]
-
-
             $scope.selectedIndex = 0;
             $scope.isMale = false;
             $scope.voices = [];
@@ -61,60 +57,78 @@
             $scope.previousText = '';
             $scope.editMode = false;
 
-
             // init the application
             initApp();
 
-
             $scope.clear = function() { $scope.text = ''; }
-
-            $scope.selectVoice = function(index) { 
-                $scope.selectedIndex = index;
-                // localStorage.selectedVoiceIndex = index;
-                // localStorageService.set('polly', localStorage);   
+            $scope.selectVoice = function(index) { $scope.selectedIndex = index; }
+            $scope.save = function() { 
+                // dont proceed if the text is already saved.
+                if (checkSaveDupes()) {
+                    throwToast('This phrase has already been saved.')
+                    return;
+                }
+                console.log('adding to save object', $scope.saved);
+                var minLength = Math.min($scope.saved[0].length, $scope.saved[1].length, $scope.saved[2].length);
+                // add it to the first column that matches the min length
+                for(var i=0; i < $scope.saved.length; i++) {
+                    if ($scope.saved[i].length == minLength) {
+                        $scope.saved[i].push($scope.text);
+                        break;
+                    }
+                }
+                $scope.clear();
+                localStorageService.set('polly', $scope.localStorage);
             }
-            
+        
             $scope.synthesize = function(newText) {
                 newText = newText == true ? true : false;
                 var selectedVoice = $scope.voices[$scope.selectedIndex].Id;
                 var textSnapShot = angular.copy($scope.text);
+
                 // we can only sythesize if we have valid params, throw toast on invalid params
                 if ($scope.text.length == 0) {
                     throwToast('Enter some text, so I can turn it to speech.')
                     return;
                 }
-                if (selectedVoice == undefined) {
+                else if (selectedVoice == undefined) {
                     throwToast('Select a voice for me to use.')
                     return;
                 }
-                if ($scope.supportedFormats == undefined) {
+                else if ($scope.supportedFormats == undefined) {
                     throwToast('This Browser does not support this app.')
                     return;
                 }
-                // console.log('selectedVoice', selectedVoice);
-                if (!newText) {
-                    addToHistory();
-                }
-                // clear out the text 
-                $timeout(function() {
-                    if (textSnapShot == $scope.text) {
-                        // save the text for user redo button
-                        $scope.previousText = textSnapShot;
-                        $scope.text = '';
+                else {
+                    $scope.loading = true;
+                    // console.log('selectedVoice', selectedVoice);
+                    if (!newText) {
+                        addToHistory();
                     }
-                }, textTimeout);
+                    // clear out the text 
+                    $timeout(function() {
+                        if (textSnapShot == $scope.text) {
+                            // save the text for user redo button
+                            $scope.previousText = textSnapShot;
+                            $scope.text = '';
+                        }
+                    }, textTimeout);
 
-                // Point the player to the streaming server
-                player.src = '/read?voiceId=' +
-                    encodeURIComponent(selectedVoice) +
-                    '&text=' + encodeURIComponent($scope.text) +
-                    '&outputFormat=' + $scope.supportedFormats[0];
-                player.play();
+                    // Point the player to the streaming server
+                    player.src = '/read?voiceId=' +
+                        encodeURIComponent(selectedVoice) +
+                        '&text=' + encodeURIComponent($scope.text) +
+                        '&outputFormat=' + $scope.supportedFormats[0];
+                    player.play().then(function() {
+                        console.log('after');
+                        $scope.loading = false;
+                    });
 
-                // Stop the form from submitting,
-                // Submitting the form is allowed only if the browser doesn't
-                // support Javascript to ensure functionality in such a case
-                event.preventDefault();
+                    // Stop the form from submitting,
+                    // Submitting the form is allowed only if the browser doesn't
+                    // support Javascript to ensure functionality in such a case
+                    event.preventDefault();
+                }
             }
 
             $scope.pressEnterOnText = function(event) {
@@ -193,7 +207,6 @@
                     }
                 }, 1000 * 3);
             }
-
 
             function initLocalStorage() {
                 $scope.localStorage = localStorageService.get('polly');
@@ -313,29 +326,6 @@
                 // console.log('history:', $scope.history);
             }
 
-            $scope.save = function() { 
-                // dont proceed if the text is already saved.
-                if (checkSaveDupes()) {
-                    throwToast('This phrase has already been saved.')
-                    return;
-                }
-
-                console.log('adding to save object', $scope.saved);
-                var minLength = Math.min($scope.saved[0].length, $scope.saved[1].length, $scope.saved[2].length);
-                // add it to the first column that matches the min length
-                for(var i=0; i < $scope.saved.length; i++) {
-                    if ($scope.saved[i].length == minLength) {
-                        $scope.saved[i].push($scope.text);
-                        break;
-                    }
-                }
-                $scope.clear();
-                // $scope.localStorage.saved = $scope.saved;
-                localStorageService.set('polly', $scope.localStorage);
-
-
-            }
-
             function checkSaveDupes() {
                 // loop through the columns
                 for (var i=0; i < $scope.saved.length; i++) {
@@ -377,6 +367,14 @@
                 $timeout(function(){ 
                     x.className = x.className.replace("show", ""); 
                 }, 1000 * 4);
+            }
+
+            function spinButton() {
+                console.log('spinning main synthesize button');
+                $scope.loading = true; // start loading
+                $timeout(function() {
+                $scope.loading = false; // stop loading
+                }, 2000);
             }
 
             // makes a request to get the available voices
@@ -775,9 +773,13 @@
             <div class="row">
                 <div class="col-sm-5 actionButtonCol">
                     <!-- synthesize button -->
-                    <button type="button" class="btn btn-success btn-lg btn-block largeButton" ng-click="synthesize()">
-                        <i class="fa fa-volume-up" aria-hidden="true"></i>
-                        &ensp;Speak
+                    <button type="button" 
+                        class="btn btn-success btn-lg btn-block largeButton"
+                        id="synthesizeButton"
+                        ng-click="synthesize();"
+                        ladda="loading">
+                            <i class="fa fa-volume-up" aria-hidden="true"></i>
+                            &ensp;Speak
                     </button>
                 </div>
                 <div class="col-sm-3 actionButtonCol">
