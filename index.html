@@ -29,7 +29,9 @@
 
         app.controller('pollyController', function($scope, $timeout, $interval, localStorageService){
 
+            // flag to force app to load defaults
             var initDefault = false;
+
             // Mapping of the OutputFormat parameter of the SynthesizeSpeech API
             // and the audio format strings understood by the browser
             var AUDIO_FORMATS = {
@@ -83,13 +85,13 @@
         
             $scope.synthesize = function(newText, callback) {
                 newText = newText == true ? true : false;
-
+                // pass an empty function if callback is not provided
                 callback = callback == undefined ? function(){} : callback;
 
                 var selectedVoice = $scope.voices[$scope.selectedIndex].Id;
                 var textSnapShot = angular.copy($scope.text);
 
-                // we can only sythesize if we have valid params, throw toast on invalid params
+                // error checking
                 if ($scope.text.length == 0) {
                     throwToast('Enter some text, so I can turn it to speech.')
                     return callback();
@@ -140,7 +142,7 @@
                 event.preventDefault();
                 $scope.synthesize(true, function(){});
             }
-            $scope.clickHistory = function(entry) {
+            $scope.clickEntry = function(entry) {
                 console.log('clickedHistory:', entry);
                 $scope.text = entry.text;
                 entry.loading = true;
@@ -831,7 +833,7 @@
             <button type="button" 
                 class="btn btn-secondary btn-lg btn-block phraseButton" 
                 ng-repeat="entry in history"
-                ng-click="clickHistory(entry)"
+                ng-click="clickEntry(entry)"
                 ladda="entry.loading"
                 data-spinner-color="#000">
                 {{entry.text}}
@@ -860,7 +862,7 @@
                     ng-init="columnNumber = $index">
                     <li ng-repeat="entry in column" 
                         class="btn phraseButton noSelect" 
-                        ng-click="!editMode && clickHistory(entry)"
+                        ng-click="!editMode && clickEntry(entry)"
                         ladda="entry.loading"
                         data-spinner-color="#000">
                         <i class="fa fa-bars dragHandle" aria-hidden="true" ng-show="editMode"></i>
@@ -875,11 +877,6 @@
                 </ul>
             </div>
         </div>
-<!--         <div class="col-sm-1">
-            <button class="btn btn-primary" ng-click="addToSaved()">
-                <i class="fa fa-pencil-square-o" aria-hidden="true" style="font-size:24px"></i>
-            </button>
-        </div> -->
 
     </div>
 
