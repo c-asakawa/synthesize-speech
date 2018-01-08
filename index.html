@@ -41,9 +41,9 @@
             var textTimeout = 1000 * 5;
             var savedPhrasesObject = [];
             var defaultPhrases = [
-                ['Hi, how are you doing?', 'You are the best child, I love you.'],
-                ['Chris cross apple sauce peanut butter toast'],
-                ['Testing', 'hi', 'hello'],
+                [{ loading: false, text: 'Hi, how are you doing?'}, { loading: false, text: 'You are the best child, I love you.'}],
+                [{ loading: false, text: 'Chris cross apple sauce peanut butter toast'}],
+                [{ loading: false, text: 'Testing'}, { loading: false, text: 'Testing 123'}],
             ]
             $scope.selectedIndex = 0;
             $scope.isMale = false;
@@ -73,7 +73,7 @@
                 // add it to the first column that matches the min length
                 for(var i=0; i < $scope.saved.length; i++) {
                     if ($scope.saved[i].length == minLength) {
-                        $scope.saved[i].push($scope.text);
+                        $scope.saved[i].push({loading:false, text:$scope.text});
                         break;
                     }
                 }
@@ -83,6 +83,9 @@
         
             $scope.synthesize = function(newText, callback) {
                 newText = newText == true ? true : false;
+
+                callback = callback == undefined ? function(){} : callback;
+
                 var selectedVoice = $scope.voices[$scope.selectedIndex].Id;
                 var textSnapShot = angular.copy($scope.text);
 
@@ -100,9 +103,9 @@
                     return callback();
                 }
                 else {
-                    $scope.loading = true;
                     // console.log('selectedVoice', selectedVoice);
                     if (!newText) {
+                        $scope.loading = true;
                         addToHistory();
                     }
                     // clear out the text 
@@ -135,13 +138,14 @@
             $scope.pressEnterOnText = function(event) {
                 console.log('pressEnterOnText:', event);
                 event.preventDefault();
-                $scope.synthesize();
+                $scope.synthesize(true, function(){});
             }
-            $scope.clickHistory = function(entry, index) {
+            $scope.clickHistory = function(entry) {
                 console.log('clickedHistory:', entry);
-                $scope.text = entry;
+                $scope.text = entry.text;
+                entry.loading = true;
                 $scope.synthesize(true, function() {
-                    
+                    entry.loading = false
                 });
             }
             $scope.toggleDragDrop = function() {
@@ -187,7 +191,8 @@
                     initToggle();
                     initDragDrop();
                     $scope.focusInput();
-
+                    console.log('saved:', $scope.saved);
+                    console.log('history:', $scope.history);
                 });
                 // update the local storage
                 $interval(function() {
@@ -245,10 +250,22 @@
                         $scope.isMale = true;
                         $('#genderToggle').bootstrapToggle('toggle');
                     }
-                    $scope.history = $scope.localStorage.history;
-                    $scope.saved = $scope.localStorage.saved;                
-                    // $scope.$apply();
+
+                    $scope.history =  validateData($scope.localStorage.history) ? $scope.localStorage.history : [];
+                    $scope.saved =  validateData($scope.localStorage.saved) ? $scope.localStorage.saved : defaultPhrases;
                 }
+            }
+
+            function validateData(list) {
+                for (var column=0; column < list.length; column++) {
+                    for (var entry=0; entry < list[column].length; entry++) {
+                        if (list[column][entry].text == undefined || list[column][entry].loading == undefined) {
+                            console.log('error: corrupt local storage data');
+                            return false;
+                        }
+                    }
+                }
+                return true;
             }
 
             function initToggle() {
@@ -312,14 +329,14 @@
 
             function addToHistory() {
                 for (var i=0; i < $scope.history.length; i++) {
-                    if ($scope.text == $scope.history[i]) {
+                    if ($scope.text == $scope.history[i].text) {
                         // alreadyInHistory = true;
                         $scope.history.splice(i, 1);
                         break;
                     }
                 }
                 // console.log('adding to history:', $scope.text);
-                $scope.history.unshift($scope.text);
+                $scope.history.unshift({loading:false, text:$scope.text});
 
                 if ($scope.history.length > maxHistoryCount) {
                     $scope.history.splice(-1, 1);
@@ -814,8 +831,10 @@
             <button type="button" 
                 class="btn btn-secondary btn-lg btn-block phraseButton" 
                 ng-repeat="entry in history"
-                ng-click="clickHistory(entry, $index)">
-                {{entry}}
+                ng-click="clickHistory(entry)"
+                ladda="entry.loading"
+                data-spinner-color="#000">
+                {{entry.text}}
             </button>
 
             
@@ -839,11 +858,13 @@
                     id="savedPhrases" 
                     ng-repeat="column in saved"
                     ng-init="columnNumber = $index">
-                    <li ng-repeat="text in column" 
+                    <li ng-repeat="entry in column" 
                         class="btn phraseButton noSelect" 
-                        ng-click="!editMode && clickHistory(text, $index)">
+                        ng-click="!editMode && clickHistory(entry)"
+                        ladda="entry.loading"
+                        data-spinner-color="#000">
                         <i class="fa fa-bars dragHandle" aria-hidden="true" ng-show="editMode"></i>
-                        {{text}}
+                        {{entry.text}}
 
                         <button ng-show="editMode" 
                             ng-click="removeSaved(columnNumber, $index)"
