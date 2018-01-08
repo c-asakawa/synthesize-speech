@@ -81,7 +81,7 @@
                 localStorageService.set('polly', $scope.localStorage);
             }
         
-            $scope.synthesize = function(newText) {
+            $scope.synthesize = function(newText, callback) {
                 newText = newText == true ? true : false;
                 var selectedVoice = $scope.voices[$scope.selectedIndex].Id;
                 var textSnapShot = angular.copy($scope.text);
@@ -89,15 +89,15 @@
                 // we can only sythesize if we have valid params, throw toast on invalid params
                 if ($scope.text.length == 0) {
                     throwToast('Enter some text, so I can turn it to speech.')
-                    return;
+                    return callback();
                 }
                 else if (selectedVoice == undefined) {
                     throwToast('Select a voice for me to use.')
-                    return;
+                    return callback();
                 }
                 else if ($scope.supportedFormats == undefined) {
                     throwToast('This Browser does not support this app.')
-                    return;
+                    return callback();
                 }
                 else {
                     $scope.loading = true;
@@ -122,6 +122,7 @@
                     player.play().then(function() {
                         console.log('after');
                         $scope.loading = false;
+                        return callback();
                     });
 
                     // Stop the form from submitting,
@@ -136,10 +137,12 @@
                 event.preventDefault();
                 $scope.synthesize();
             }
-            $scope.clickHistory = function(entry) {
+            $scope.clickHistory = function(entry, index) {
                 console.log('clickedHistory:', entry);
                 $scope.text = entry;
-                $scope.synthesize(true);
+                $scope.synthesize(true, function() {
+                    
+                });
             }
             $scope.toggleDragDrop = function() {
                 console.log('toggled drag drop');
@@ -811,7 +814,7 @@
             <button type="button" 
                 class="btn btn-secondary btn-lg btn-block phraseButton" 
                 ng-repeat="entry in history"
-                ng-click="clickHistory(entry)">
+                ng-click="clickHistory(entry, $index)">
                 {{entry}}
             </button>
 
@@ -838,7 +841,7 @@
                     ng-init="columnNumber = $index">
                     <li ng-repeat="text in column" 
                         class="btn phraseButton noSelect" 
-                        ng-click="!editMode && clickHistory(text)">
+                        ng-click="!editMode && clickHistory(text, $index)">
                         <i class="fa fa-bars dragHandle" aria-hidden="true" ng-show="editMode"></i>
                         {{text}}
 
