@@ -209,6 +209,13 @@
                 $interval(function() {
                     // console.log('localStorage:', $scope.localStorage)
                     // check to see if the selected index has changed
+
+                    // console.log($scope.localStorage.voice);
+                    if ($scope.localStorage.voice.index == undefined) {
+                        console.log('undefined voice');
+                        return;
+                    }
+
                     if ($scope.localStorage.voice.index != $scope.selectedIndex) {
                         $scope.localStorage.voice.index = $scope.selectedIndex;
 
@@ -232,7 +239,7 @@
 
             function initLocalStorage() {
                 $scope.localStorage = localStorageService.get('polly');
-                console.log('current state of the local storage:', $scope.localStorage);
+                console.log('current state of the local storage:', angular.copy($scope.localStorage));
 
                 // new instance? if so init a new storage object
                 if (initDefault || $scope.localStorage == null) {
@@ -355,7 +362,7 @@
                 if ($scope.history.length > maxHistoryCount) {
                     $scope.history.splice(-1, 1);
                 }
-
+                $scope.localStorage.history = $scope.history;
                 localStorageService.set('polly', $scope.localStorage);
                 // console.log('history:', $scope.history);
             }
