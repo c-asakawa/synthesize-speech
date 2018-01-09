@@ -70,6 +70,11 @@
             $scope.selectVoice = function(index) { $scope.selectedIndex = index; }
             $scope.save = function() { 
                 // dont proceed if the text is already saved.
+                if ($scope.text.length == 0) {
+                    throwToast('Enter some text, then press the save button again');
+                    return;
+                }
+
                 if (checkSaveDupes()) {
                     throwToast('This phrase has already been saved.')
                     return;
@@ -84,6 +89,7 @@
                     }
                 }
                 $scope.clear();
+                $scope.localStorage.saved = $scope.saved;
                 localStorageService.set('polly', $scope.localStorage);
             }
         
@@ -372,7 +378,7 @@
                 // loop through the columns
                 for (var i=0; i < $scope.saved.length; i++) {
                     for (var j=0; j < $scope.saved[i].length; j++) {
-                        if ($scope.saved[i][j] == $scope.text) {
+                        if ($scope.saved[i][j].text == $scope.text) {
                             console.log('dupe found');
                             return true;
                         }
@@ -509,8 +515,11 @@
     <link rel="stylesheet" type="text/css" href="https://cdnjs.cloudflare.com/ajax/libs/angular-material/1.1.5/angular-material.min.css" />
 
     <style>
+        .btn-primary {
+            background-color: #138ad2 !important;
+        }
         .largeButton {
-            height: 55px;
+            height: 80px;
             font-size: 16px;
             font-weight: bold;
             margin-bottom: 5px;
@@ -570,11 +579,11 @@
         #historyContainer {
             /*max-height: 344px;*/
             overflow: auto;
-            padding: 10px 16px;
+            padding: 0 2px 4px 2px;
         }
         .phraseButton {
-            background-color: #f9f9f9;
-            font-size: 12px;
+            background-color: #fbfbfb;
+            font-size: 16px;
             white-space: normal;
             text-align: left;
             max-height: 95px;
@@ -685,15 +694,23 @@
 
         .navToolBar {
             margin-bottom: 0;
-            background-color: #337ab7;
             height: 27px;
             min-height: 20px;
-            color: #FFF;
             border-radius: 6px 6px 0px 0px;
             -moz-border-radius: 6px 6px 0px 0px;
             -webkit-border-radius: 6px 6px 0px 0px;
-            border: 0px solid #000000;
+            border: 1px solid #000000;
         }
+        .backgroundColor {
+            background-color: #efeeee;
+            border-color: #d4d4d4 !important;
+            color: #555;
+        }
+        .entryContainer {
+            background-color: #fff;
+            padding: 10px;
+        }
+
         .historyHelpMessage {
             top: 30px;
             color: #aaa;
@@ -707,7 +724,7 @@
         }
         .lockIcon {
             position: absolute;
-            right: 7px;
+            right: 48px;
             top: 7px;
             font-size: 18px;
         }
@@ -793,6 +810,12 @@
         .toggle{
             max-width: 80px !important;
         }
+        .toggleWrench {
+            max-height: 27px;
+            width: 40px;
+            position: absolute;
+            right: 0px;
+        }
     </style>
 </head>
 
@@ -873,9 +896,8 @@
                 id="speechInput"
                 class="textInput boxShadow"
                 ng-keydown="$event.keyCode == 13 && pressEnterOnText($event);"
-                placeholder="type what you want to say into here"
+                placeholder="Say Something"
                 ng-blur="focusInput()">
-                <span>Type what you want to say into here.</span>
             </textarea>
 
 
@@ -888,7 +910,8 @@
                         class="btn btn-success btn-lg btn-block largeButton"
                         id="synthesizeButton"
                         ng-click="synthesize();"
-                        ladda="loading">
+                        ladda="loading"
+                        style="font-size: 24px;">
                             <i class="fa fa-volume-up" aria-hidden="true"></i>
                             &ensp;Speak
                     </button>
@@ -896,17 +919,15 @@
                 <div class="col-sm-6 actionButtonCol">
                     <!-- clear text button -->
                     <button type="button" 
-                        class="btn btn-danger btn-lg btn-block largeButton halfButton" 
-                        ng-click="clear()" 
-                        ng-disabled="text.length==0">
+                        class="btn btn-primary btn-lg btn-block largeButton halfButton" 
+                        ng-click="clear()">
                         <i class="fa fa-ban" aria-hidden="true"></i>
                         &ensp;Clear
                     </button>
                     <!-- clear text button -->
                     <button type="button" 
                         class="btn btn-primary btn-lg btn-block largeButton halfButton saveButtonPosition" 
-                        ng-click="save(text)" 
-                        ng-disabled="text.length==0">
+                        ng-click="save(text)">
                         <i class="fa fa-floppy-o" aria-hidden="true"></i>
                         &ensp;Save
                     </button>
@@ -916,42 +937,44 @@
                 </div> -->
             </div> <!-- end action button row -->
         </div>
-        <nav class="navbar col-sm-4 navToolBar"> 
+        <nav class="navbar col-sm-4 navToolBar backgroundColor"> 
             <i class="fa fa-clock-o" aria-hidden="true" style="font-size:18px;margin-top: 4px;"></i>
             <span style="font-size:17px;">&ensp; History</span> 
         </nav>
-        <div class="col-sm-4 roundedBottom" id="historyContainer" ng-style="isSmallViewport ? {'height': 'auto'} : {'height': '345px'}">
-            
-            <span ng-if="history.length == 0" class="historyHelpMessage noSelect">
-                Enter some text to turn into speech and it will show up here
-            </span>
+        <div class="col-sm-4 roundedBottom backgroundColor"
+            id="historyContainer" 
+            ng-style="isSmallViewport ? {'height': 'auto'} : {'height': '370px'}">
+            <div class="entryContainer" style="height:100%">
+                <span ng-if="history.length == 0" class="historyHelpMessage noSelect">
+                    Enter some text to turn into speech and it will show up here
+                </span>
 
-            <button type="button" 
-                class="btn btn-secondary btn-lg btn-block phraseButton" 
-                ng-repeat="entry in history"
-                ng-click="clickEntry(entry)"
-                ladda="entry.loading"
-                data-spinner-color="#000">
-                {{entry.text}}
-            </button>
-
+                <button type="button" 
+                    class="btn btn-secondary btn-lg btn-block phraseButton" 
+                    ng-repeat="entry in history"
+                    ng-click="clickEntry(entry)"
+                    ladda="entry.loading"
+                    data-spinner-color="#000">
+                    {{entry.text}}
+                </button>
+            </div>
             
         </div>
 
-        <nav class="navbar col-sm-12 navToolBar"> 
+        <nav class="navbar col-sm-12 navToolBar backgroundColor"> 
             <i class="fa fa-floppy-o" aria-hidden="true" style="font-size:18px;margin-top: 4px;"></i>
             <span style="font-size:17px;">&ensp; Saved Phrases</span> 
 
-            <button class="btn btn-primary" ng-click="toggleEdit()" style="max-height: 27px;float: right;">
-                <i class="fa fa-wrench" aria-hidden="true" style="font-size:16px;margin-right: 5px"></i>
-            </button>
             <div class="lockIcon">
                 <i class="fa fa-lock" aria-hidden="true" ng-show="!editMode"></i>
                 <i class="fa fa-unlock" aria-hidden="true" ng-show="editMode"></i>
             </div>
+            <button class="btn btn-primary toggleWrench" ng-click="toggleEdit()">
+                <i class="fa fa-wrench" aria-hidden="true" style="font-size:16px;margin-right: 5px"></i>
+            </button>
         </nav>
-        <div class="col-sm-12 roundedBottom">
-            <div class="row" style="margin: 5px 0;">
+        <div class="col-sm-12 roundedBottom backgroundColor" style="padding: 0 2px 4px 2px;">
+            <div class="row entryContainer" style="margin:0;;padding-top: 5px;">
                 <ul class='col-sm-4 savedPhrases' 
                     id="savedPhrases" 
                     ng-repeat="column in saved"
