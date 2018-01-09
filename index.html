@@ -12,6 +12,7 @@
     <link rel="stylesheet" href="https://gitcdn.github.io/bootstrap-toggle/2.2.2/css/bootstrap-toggle.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/angular-drag-and-drop-lists/2.1.0/angular-drag-and-drop-lists.min.js">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/Ladda/1.0.5/ladda-themeless.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/please-wait/0.0.5/please-wait.min.css">
 
     <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.5/angular.min.js"></script>
     <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.5/angular-animate.min.js"></script>
@@ -23,7 +24,7 @@
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/Ladda/1.0.5/spin.min.js"></script>
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/Ladda/1.0.5/ladda.min.js"></script>
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/angular-ladda/0.4.3/angular-ladda.min.js"></script>
-
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/please-wait/0.0.5/please-wait.min.js"></script>
 
     <script>
         //Define an angular module for our app
@@ -203,6 +204,15 @@
 
             function initApp() {
 
+                var loading_screen = pleaseWait({
+                  // logo: false,
+                  backgroundColor: '#fff',
+                  loadingHtml: "<div class=\"spinner\"> \
+                                  <div class=\"double-bounce1\"></div> \
+                                  <div class=\"double-bounce2\"></div> \
+                                </div>"
+                });
+
                 getVoices(function() {
                     initLocalStorage();
                     $scope.$apply();
@@ -211,6 +221,7 @@
                     $scope.focusInput();
                     console.log('saved:', $scope.saved);
                     console.log('history:', $scope.history);
+                    loading_screen.finish();
                 });
                 // update the local storage
                 $interval(function() {
@@ -831,6 +842,50 @@
             border-color: #ccc;
             width: 25px;
             padding: 5px 3px;
+        }
+        .spinner {
+          width: 70px;
+          height: 70px;
+
+          position: relative;
+          margin: 100px auto;
+        }
+
+        .double-bounce1, .double-bounce2 {
+          width: 100%;
+          height: 100%;
+          border-radius: 50%;
+          background-color: #13a3d5;
+          opacity: 0.6;
+          position: absolute;
+          top: 0;
+          left: 0;
+          
+          -webkit-animation: sk-bounce 2.0s infinite ease-in-out;
+          animation: sk-bounce 2.0s infinite ease-in-out;
+        }
+
+        .double-bounce2 {
+          -webkit-animation-delay: -1.0s;
+          animation-delay: -1.0s;
+        }
+
+        @-webkit-keyframes sk-bounce {
+          0%, 100% { -webkit-transform: scale(0.0) }
+          50% { -webkit-transform: scale(1.0) }
+        }
+
+        @keyframes sk-bounce {
+          0%, 100% { 
+            transform: scale(0.0);
+            -webkit-transform: scale(0.0);
+          } 50% { 
+            transform: scale(1.0);
+            -webkit-transform: scale(1.0);
+          }
+        }
+        .pg-loading-logo-header {
+            display: none;
         }
 
     </style>
