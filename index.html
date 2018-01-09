@@ -587,7 +587,7 @@
             font-size: 18px;
         }
         #historyContainer {
-            /*max-height: 344px;*/
+            height: 350px;
             padding: 0 2px 4px 2px;
         }
         .phraseButton {
@@ -850,7 +850,7 @@
 
         <div class="col-sm-8" style="padding-left:0px;" ng-style="isSmallViewport ? {'padding-right': 0} : {'padding-right': '15px'}">
             <!-- <div ng-show="isSmallViewport && !showVoiceMenu" style="padding:15px"></div> -->
-            <nav id="voiceBar" class="row" ng-show="!isSmallViewport || showVoiceMenu">
+            <nav id="voiceBar" class="row" ng-show="!isSmallViewport || showVoiceMenu" style="margin-top:0;">
                 <!-- gender toggle -->
                 <div class="col-sm-6" style="padding:0;"> 
                     <input type="checkbox" checked 
@@ -961,7 +961,7 @@
         </nav>
         <div class="col-sm-4 roundedBottom backgroundColor"
             id="historyContainer" 
-            ng-style="isSmallViewport ? {'height': 'auto'} : {'height': '370px'}">
+            ng-style="isSmallViewport ? {'height': 'auto'} : {'height': '350px'}">
             <div class="entryContainer" 
                 ng-style="isSmallViewport ? {'height': 'auto'} : {'height': '100%'}">
                 <span ng-if="history.length == 0" class="historyHelpMessage noSelect">
