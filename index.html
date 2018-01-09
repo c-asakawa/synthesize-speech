@@ -328,6 +328,12 @@
                           _super($item, container);
                         });
 
+                        console.log('item', $item);
+
+                        // correct animation offset
+                        $item.animate({
+                            padding: "10px 26px"
+                        }, 200);
                         updateSaveOrder();
                       },
 
@@ -397,7 +403,10 @@
                     for (var j=0; j < savedPhrasesObject[i].children.length; j++) {
                         var text = savedPhrasesObject[i].children[j].innerText;
                         if (text.length > 0) {
-                            savedList[i].push(text);
+                            savedList[i].push({
+                                text: text,
+                                loading: false,
+                            });
                         }
                     }
                 }
@@ -579,7 +588,6 @@
         }
         #historyContainer {
             /*max-height: 344px;*/
-            overflow: auto;
             padding: 0 2px 4px 2px;
         }
         .phraseButton {
@@ -709,6 +717,7 @@
         .entryContainer {
             background-color: #fff;
             padding: 10px;
+            overflow: auto;
         }
 
         .historyHelpMessage {
@@ -746,10 +755,10 @@
         }
         .dragHandle {
             font-size: 16px;
-            margin: -4px;
-            margin-top: 2px;
-            padding-right: 10px;
             color: #ccc;
+            position: absolute;
+            left: -20px;
+            top: 8px;
         }
         .saveButtonPosition {
             position: absolute;
@@ -812,6 +821,18 @@
             position: absolute;
             right: 0px;
         }
+        .ladda-label {
+            width: 100%
+        }
+        .entryCloseButton {
+            position: absolute;
+            right: -23px;
+            top: 1px;
+            border-color: #ccc;
+            width: 25px;
+            padding: 5px 3px;
+        }
+
     </style>
 </head>
 
@@ -820,12 +841,12 @@
     <!-- user input text area row -->
     <div class="row">
 
-            <button class="btn btn-primary menuToggleButton" 
-                ng-show="isSmallViewport"
-                ng-click="toggleVoiceMenu()">
-                <i class="fa fa-bars" ng-show="!showVoiceMenu" aria-hidden="true"></i>
-                <i class="fa fa-arrow-up" ng-show="showVoiceMenu" aria-hidden="true"></i>
-            </button>
+        <button class="btn btn-primary menuToggleButton" 
+            ng-show="isSmallViewport"
+            ng-click="toggleVoiceMenu()">
+            <i class="fa fa-bars" ng-show="!showVoiceMenu" aria-hidden="true"></i>
+            <i class="fa fa-arrow-up" ng-show="showVoiceMenu" aria-hidden="true"></i>
+        </button>
 
         <div class="col-sm-8" style="padding-left:0px;" ng-style="isSmallViewport ? {'padding-right': 0} : {'padding-right': '15px'}">
             <!-- <div ng-show="isSmallViewport && !showVoiceMenu" style="padding:15px"></div> -->
@@ -893,12 +914,12 @@
                 id="speechInput"
                 class="textInput boxShadow"
                 ng-keydown="$event.keyCode == 13 && pressEnterOnText($event);"
-                placeholder="Say Something"
+                placeholder="Type Here"
                 ng-blur="focusInput()">
             </textarea>
 
 
-                <!-- action button row -->
+            <!-- action button row -->
             <div class="row">
                 <div class="col-sm-6 actionButtonCol"
                     ng-style="isSmallViewport ? {'padding-right': '0'} : {'padding-right': '6px'}">
@@ -972,7 +993,7 @@
             </button>
         </nav>
         <div class="col-sm-12 roundedBottom backgroundColor" style="padding: 0 2px 4px 2px;">
-            <div class="row entryContainer" style="margin:0;;padding-top: 5px;">
+            <div class="row entryContainer" style="margin:0;padding-top: 5px;">
                 <ul class='col-sm-4 savedPhrases' 
                     id="savedPhrases" 
                     ng-repeat="column in saved"
@@ -981,14 +1002,14 @@
                         class="btn phraseButton noSelect" 
                         ng-click="!editMode && clickEntry(entry)"
                         ladda="entry.loading"
-                        data-spinner-color="#000">
+                        data-spinner-color="#000"
+                        ng-style="editMode ? { 'padding': '10px 26px' } : { 'padding': '10px' }">
                         <i class="fa fa-bars dragHandle" aria-hidden="true" ng-show="editMode"></i>
                         {{entry.text}}
 
                         <button ng-show="editMode"
-                            class="btn" 
-                            ng-click="removeSaved(columnNumber, $index)"
-                            style="float: right;font-size: 16px;">
+                            class="btn entryCloseButton" 
+                            ng-click="removeSaved(columnNumber, $index)">
                             <i class="fa fa-times" aria-hidden="true"></i>
                         </button>
                     </li>
