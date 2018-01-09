@@ -595,7 +595,6 @@
         }
         .redoButton {
             position: absolute;
-            right: 20px;
             margin-top: 5px;
             background-color: transparent;
         }
@@ -729,16 +728,12 @@
             top: 7px;
             font-size: 18px;
         }
-
-        .btn-female {
-            background-color: #ffbad2;
-            color: #fff;
-        }
-
-        .btn-male {
-            background-color: #89cff0;
-            color: #fff;
-        }
+        .btn-female { background-color: #ffbad2; color: #fff; }
+        .btn-female:hover { background-color: #f2b0c7; color: #fff; }
+        .btn-female:active { background-color: #f2b0c7; color: #fff; }
+        .btn-male { background-color: #89cff0; color: #fff; }
+        .btn-male:hover { background-color: #7abcdb; color: #fff; }
+        .btn-male:active { background-color: #7abcdb; color: #fff; }
         .toggle {
             max-height: 36px !important;
         }
@@ -832,7 +827,7 @@
                 <i class="fa fa-arrow-up" ng-show="showVoiceMenu" aria-hidden="true"></i>
             </button>
 
-        <div class="col-sm-8" style="padding-left:0px;">
+        <div class="col-sm-8" style="padding-left:0px;" ng-style="isSmallViewport ? {'padding-right': 0} : {'padding-right': '15px'}">
             <!-- <div ng-show="isSmallViewport && !showVoiceMenu" style="padding:15px"></div> -->
             <nav id="voiceBar" class="row" ng-show="!isSmallViewport || showVoiceMenu">
                 <!-- gender toggle -->
@@ -889,8 +884,9 @@
             <!-- user input text area -->
             <button class="btn redoButton" 
                 ng-if="previousText.length > 0"
-                ng-click="redoLast()">
-                <i class="fa fa-undo" aria-hidden="true" style="font-size:20px"></i>
+                ng-click="redoLast()"
+                ng-style="isSmallViewport ? {'right': '0'} : {'right': '20px'}">
+                <i class="fa fa-undo" aria-hidden="true" style="font-size:20px;color: #555;"></i>
             </button>
             <textarea ng-model="text" 
                 ng-style="isSmallViewport ? {'height': '120px'} : {'height': '220px'}"
@@ -945,7 +941,8 @@
         <div class="col-sm-4 roundedBottom backgroundColor"
             id="historyContainer" 
             ng-style="isSmallViewport ? {'height': 'auto'} : {'height': '370px'}">
-            <div class="entryContainer" style="height:100%">
+            <div class="entryContainer" 
+                ng-style="isSmallViewport ? {'height': 'auto'} : {'height': '100%'}">
                 <span ng-if="history.length == 0" class="historyHelpMessage noSelect">
                     Enter some text to turn into speech and it will show up here
                 </span>
