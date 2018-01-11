@@ -51,9 +51,14 @@
             var textTimeout = 1000 * 5;
             var savedPhrasesObject = [];
             var defaultPhrases = [
-                [{ loading: false, text: 'Hi, how are you doing?'}, { loading: false, text: 'You are the best child, I love you.'}],
-                [{ loading: false, text: 'Chris cross apple sauce peanut butter toast'}],
-                [{ loading: false, text: 'Testing'}, { loading: false, text: 'Testing 123'}],
+                [
+                    { loading: false, text: 'Hi, how are you doing?'}, 
+                    { loading: false, text: 'You are the best child, I love you.'}
+                ],
+                [
+                    { loading: false, text: 'I can understand everything you say, however I have a condition where I cannot speak. I have to use this device to communicate.'}
+                ],
+                [{ loading: false, text: 'I\'m hungry'}, { loading: false, text: 'Please Help'}],
             ]
 
             var localStorage = {};
@@ -598,7 +603,7 @@
             font-size: 16px;
             white-space: normal;
             text-align: left;
-            max-height: 95px;
+            max-height: 110px;
             overflow: auto;
             border: 1px solid #CCC;
             min-height: 38px;
