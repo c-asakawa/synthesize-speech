@@ -33,7 +33,9 @@
         app.controller('pollyController', function($scope, $timeout, $interval, localStorageService){
 
             // flag to force app to load defaults
-            var initDefault = false;
+            var initDefault = window.location.href.includes('init');
+            // debug flag
+            var debug = window.location.href.includes('debug');
 
             // Mapping of the OutputFormat parameter of the SynthesizeSpeech API
             // and the audio format strings understood by the browser
@@ -78,7 +80,7 @@
 
             $scope.clear = function() { $scope.text = ''; }
             $scope.selectVoice = function(index) { 
-                console.log('index:', index);
+                if (debug) { console.log('selectVoice() index:', index); }
                 $scope.selection.index = index;
                 if ($scope.selection.isMale) {
                     $scope.selection.maleIndex = index;
@@ -103,7 +105,7 @@
                     throwToast('This phrase has already been saved.')
                     return;
                 }
-                console.log('adding to save object', $scope.saved);
+                if (debug) { console.log('adding to save object', $scope.saved); }
                 var minLength = Math.min($scope.saved[0].length, $scope.saved[1].length, $scope.saved[2].length);
                 // add it to the first column that matches the min length
                 for(var i=0; i < $scope.saved.length; i++) {
@@ -124,6 +126,7 @@
 
                 var selectedVoice = $scope.voices[$scope.selection.index].Id;
                 var textSnapShot = angular.copy($scope.text);
+                if (debug) { console.log('synthesizing text:', textSnapShot) }
 
                 // error checking
                 if ($scope.text.length == 0) {
@@ -139,7 +142,6 @@
                     return callback();
                 }
                 else {
-                    // console.log('selectedVoice', selectedVoice);
                     if (!newText) {
                         $scope.loading = true;
                         addToHistory();
@@ -159,7 +161,6 @@
                         '&text=' + encodeURIComponent($scope.text) +
                         '&outputFormat=' + $scope.supportedFormats[0];
                     player.play().then(function() {
-                        console.log('after');
                         $scope.loading = false;
                         return callback();
                     });
@@ -172,12 +173,11 @@
             }
 
             $scope.pressEnterOnText = function(event) {
-                console.log('pressEnterOnText:', event);
                 event.preventDefault();
                 $scope.synthesize(false, function(){});
             }
             $scope.clickEntry = function(entry) {
-                console.log('clickedHistory:', entry);
+                if (debug) { console.log('clickedHistory:', entry); }
                 $scope.text = entry.text;
                 entry.loading = true;
                 $scope.synthesize(true, function() {
@@ -185,10 +185,7 @@
                 });
             }
             $scope.toggleDragDrop = function() {
-                console.log('toggled drag drop');
                 $("ul.savedPhrases").sortable("disable");
-                console.log('savedPhrasesObject:', savedPhrasesObject)
-                // savedPhrasesObject.children
             }
             $scope.redoLast = function() {
                 $scope.text = $scope.previousText;
@@ -206,7 +203,7 @@
                 }
             }
             $scope.removeSaved = function(column, index) {
-                console.log('removeSaved:', column, index, $scope.saved);
+                if (debug) { console.log('removeSaved:', column, index, $scope.saved); }
                 if(index > -1) {
                     $scope.saved[column].splice(index, 1);
                 }
@@ -226,7 +223,6 @@
             }
 
             function initApp() {
-
                 var loading_screen = pleaseWait({
                   // logo: false,
                   backgroundColor: '#fff',
@@ -242,8 +238,6 @@
                     initToggle();
                     initDragDrop();
                     $scope.focusInput();
-                    console.log('saved:', $scope.saved);
-                    console.log('history:', $scope.history);
                     loading_screen.finish();
                 });
 
@@ -255,7 +249,7 @@
 
             function initLocalStorage() {
                 localStorage = localStorageService.get('polly');
-                console.log('current state of the local storage:', angular.copy(localStorage));
+                if (debug) { console.log('current state of the local storage:', angular.copy(localStorage)); }
 
                 // new instance? if so init a new storage object
                 if (initDefault || localStorage == null) {
@@ -274,7 +268,7 @@
                 }
                 // use the storage object to set up the env.
                 else {
-                    console.log('init app with storage object');
+                    if (debug) { console.log('init app with storage object'); }
                     // correct an older version of local storage that did not use this
                     if (localStorage.selection == undefined) {
                         localStorage.selection = $scope.selection;
@@ -295,7 +289,7 @@
                 for (var column=0; column < list.length; column++) {
                     for (var entry=0; entry < list[column].length; entry++) {
                         if (list[column][entry].text == undefined || list[column][entry].loading == undefined) {
-                            console.log('error: corrupt local storage data');
+                            if (debug) { console.log('error: corrupt local storage data'); }
                             return false;
                         }
                     }
@@ -311,15 +305,13 @@
 
                     // event to watch changes in the toggle.
                     $('#genderToggle').change(function() {
-                        console.log('toggled:', $(this).prop('checked'));
+                        if (debug) { console.log('toggled:', $(this).prop('checked')); }
 
                         if ($(this).prop('checked')) {
-                            console.log('switched to female');
                             $scope.selection.isMale = false;
                             $scope.selectVoice($scope.selection.femaleIndex);                            
                         }
                         else {
-                            console.log('switched to male');
                             $scope.selection.isMale = true;
                             $scope.selectVoice($scope.selection.maleIndex);                            
                         }
@@ -344,9 +336,6 @@
                           $clonedItem.detach();
                           _super($item, container);
                         });
-
-                        console.log('item', $item);
-
                         // correct animation offset
                         $item.animate({
                             padding: "10px 26px"
@@ -373,7 +362,7 @@
                         });
                       }
                     });
-                    console.log('savedPhrasesObject:', savedPhrasesObject);
+                    if(debug) { console.log('savedPhrasesObject:', savedPhrasesObject); }
                     $("ul.savedPhrases").sortable("disable");
                 });
             }
@@ -381,12 +370,10 @@
             function addToHistory() {
                 for (var i=0; i < $scope.history.length; i++) {
                     if ($scope.text == $scope.history[i].text) {
-                        // alreadyInHistory = true;
                         $scope.history.splice(i, 1);
                         break;
                     }
                 }
-                // console.log('adding to history:', $scope.text);
                 $scope.history.unshift({loading:false, text:$scope.text});
 
                 if ($scope.history.length > maxHistoryCount) {
@@ -394,7 +381,6 @@
                 }
                 localStorage.history = $scope.history;
                 localStorageService.set('polly', localStorage);
-                // console.log('history:', $scope.history);
             }
 
             function checkSaveDupes() {
@@ -402,7 +388,7 @@
                 for (var i=0; i < $scope.saved.length; i++) {
                     for (var j=0; j < $scope.saved[i].length; j++) {
                         if ($scope.saved[i][j].text == $scope.text) {
-                            console.log('dupe found');
+                            if (debug) { console.log('dupe found'); }
                             return true;
                         }
                     }
@@ -411,7 +397,7 @@
             }
 
             function updateSaveOrder() {
-                console.log('updateSaveOrder:', savedPhrasesObject)
+                if (debug) { console.log('updateSaveOrder:', savedPhrasesObject); }
                 var savedList = [];
                 // loop through all three columns
                 for (var i=0; i < savedPhrasesObject.length; i++) {
@@ -429,8 +415,7 @@
                 }
                 // save the new order to local storage
                 localStorage.saved = savedList;
-
-                console.log('updating localStorage', localStorage)
+                if (debug) { console.log('updating localStorage', localStorage) }
                 localStorageService.set('polly', localStorage);
             }
 
@@ -444,7 +429,6 @@
             }
 
             function spinButton() {
-                console.log('spinning main synthesize button');
                 $scope.loading = true; // start loading
                 $timeout(function() {
                 $scope.loading = false; // stop loading
@@ -459,14 +443,13 @@
                         // Build the list of options for the menu
                         $scope.$apply(function() {
                             voices.forEach(function (voice) {
-                                // console.log('fetching voice:', voice);
                                 // only grab the english speaking voices
                                 if(voice.LanguageCode.startsWith('en')) {
                                     $scope.voices.push(voice);
                                 }
                             });
                         });
-                        console.log('successfully fetched voices:', $scope.voices);
+                        if (debug) { console.log('successfully fetched voices:', $scope.voices); }
                         return callback();
                     },
                     // If the request fails
