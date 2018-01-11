@@ -86,10 +86,7 @@
                 else {
                     $scope.selection.femaleIndex = index;
                 }
-                // localStorage.voice = {
-                //     index: $scope.selection.index,
-                //     gender: $scope.selection.isMale ? 'male' : 'female'
-                // }
+
                 localStorage.selection = $scope.selection;
                 localStorageService.set('polly', localStorage);
 
@@ -249,33 +246,8 @@
                     console.log('history:', $scope.history);
                     loading_screen.finish();
                 });
-                // update the local storage
-                // $interval(function() {
-                //     // console.log('localStorage:', localStorage)
-                //     // check to see if the selected index has changed
 
-                //     // console.log(localStorage.voice);
-                //     if (localStorage.voice.index == undefined) {
-                //         console.log('undefined voice');
-                //         return;
-                //     }
-
-                //     if (localStorage.voice.index != $scope.selection.index) {
-                //         localStorage.voice.index = $scope.selection.index;
-
-                //         // now in addition, check to see if the gender is out of sync
-                //         if (localStorage.voice.gender == 'female' && $scope.selection.isMale) {
-                //             localStorage.voice.gender = 'male';
-                //             console.log('updated male')
-                //         }
-                //         else if (localStorage.voice.gender == 'male' && !$scope.selection.isMale) {
-                //             localStorage.voice.gender = 'female';
-                //             console.log('updated female')
-                //         }
-                //         localStorageService.set('polly', localStorage);
-                //     }
-                // }, 1000 * 3);
-                // TODO: figure out a better way to do this
+                // check the view port window with size
                 $interval(function() {
                     $scope.isSmallViewport = $(window).width() < 768;
                 }, 500)
@@ -925,7 +897,7 @@
     </style>
 </head>
 
-<body ng-app="pollyApp" ng-controller="pollyController" class="container">
+<body ng-app="pollyApp" ng-controller="pollyController" class="container" ng-cloak>
     
     <!-- user input text area row -->
     <div class="row">
