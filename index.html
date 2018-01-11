@@ -50,12 +50,21 @@
                 [{ loading: false, text: 'Chris cross apple sauce peanut butter toast'}],
                 [{ loading: false, text: 'Testing'}, { loading: false, text: 'Testing 123'}],
             ]
-            $scope.selectedIndex = 0;
-            $scope.isMale = false;
+
+            var localStorage = {};
+
+            $scope.selection = {
+                index       : 0, // defaults to female Joanna voice
+                femaleIndex : 0,
+                maleIndex   : 4,
+                isMale      : false,
+            }
+
+            //$scope.selection.index = 0;
+            //$scope.isMale = false;
             $scope.voices = [];
             $scope.text = '';
             $scope.supportedFormats = getSupportedAudioFormats(player);
-            $scope.localStorage = {};
             $scope.history = [];
             $scope.saved = [];
             $scope.toastMessage = 'error';
@@ -68,7 +77,24 @@
             initApp();
 
             $scope.clear = function() { $scope.text = ''; }
-            $scope.selectVoice = function(index) { $scope.selectedIndex = index; }
+            $scope.selectVoice = function(index) { 
+                console.log('index:', index);
+                $scope.selection.index = index;
+                if ($scope.selection.isMale) {
+                    $scope.selection.maleIndex = index;
+                }
+                else {
+                    $scope.selection.femaleIndex = index;
+                }
+                // localStorage.voice = {
+                //     index: $scope.selection.index,
+                //     gender: $scope.selection.isMale ? 'male' : 'female'
+                // }
+                localStorage.selection = $scope.selection;
+                localStorageService.set('polly', localStorage);
+
+
+            }
             $scope.save = function() { 
                 // dont proceed if the text is already saved.
                 if ($scope.text.length == 0) {
@@ -90,8 +116,8 @@
                     }
                 }
                 $scope.clear();
-                $scope.localStorage.saved = $scope.saved;
-                localStorageService.set('polly', $scope.localStorage);
+                localStorage.saved = $scope.saved;
+                localStorageService.set('polly', localStorage);
             }
         
             $scope.synthesize = function(newText, callback) {
@@ -99,7 +125,7 @@
                 // pass an empty function if callback is not provided
                 callback = callback == undefined ? function(){} : callback;
 
-                var selectedVoice = $scope.voices[$scope.selectedIndex].Id;
+                var selectedVoice = $scope.voices[$scope.selection.index].Id;
                 var textSnapShot = angular.copy($scope.text);
 
                 // error checking
@@ -187,8 +213,8 @@
                 if(index > -1) {
                     $scope.saved[column].splice(index, 1);
                 }
-                $scope.localStorage.saved = $scope.saved;
-                localStorageService.set('polly', $scope.localStorage);
+                localStorage.saved = $scope.saved;
+                localStorageService.set('polly', localStorage);
             }
             $scope.focusInput = function() {
                 $timeout(function (){
@@ -224,31 +250,31 @@
                     loading_screen.finish();
                 });
                 // update the local storage
-                $interval(function() {
-                    // console.log('localStorage:', $scope.localStorage)
-                    // check to see if the selected index has changed
+                // $interval(function() {
+                //     // console.log('localStorage:', localStorage)
+                //     // check to see if the selected index has changed
 
-                    // console.log($scope.localStorage.voice);
-                    if ($scope.localStorage.voice.index == undefined) {
-                        console.log('undefined voice');
-                        return;
-                    }
+                //     // console.log(localStorage.voice);
+                //     if (localStorage.voice.index == undefined) {
+                //         console.log('undefined voice');
+                //         return;
+                //     }
 
-                    if ($scope.localStorage.voice.index != $scope.selectedIndex) {
-                        $scope.localStorage.voice.index = $scope.selectedIndex;
+                //     if (localStorage.voice.index != $scope.selection.index) {
+                //         localStorage.voice.index = $scope.selection.index;
 
-                        // now in addition, check to see if the gender is out of sync
-                        if ($scope.localStorage.voice.gender == 'female' && $scope.isMale) {
-                            $scope.localStorage.voice.gender = 'male';
-                            console.log('updated male')
-                        }
-                        else if ($scope.localStorage.voice.gender == 'male' && !$scope.isMale) {
-                            $scope.localStorage.voice.gender = 'female';
-                            console.log('updated female')
-                        }
-                        localStorageService.set('polly', $scope.localStorage);
-                    }
-                }, 1000 * 3);
+                //         // now in addition, check to see if the gender is out of sync
+                //         if (localStorage.voice.gender == 'female' && $scope.selection.isMale) {
+                //             localStorage.voice.gender = 'male';
+                //             console.log('updated male')
+                //         }
+                //         else if (localStorage.voice.gender == 'male' && !$scope.selection.isMale) {
+                //             localStorage.voice.gender = 'female';
+                //             console.log('updated female')
+                //         }
+                //         localStorageService.set('polly', localStorage);
+                //     }
+                // }, 1000 * 3);
                 // TODO: figure out a better way to do this
                 $interval(function() {
                     $scope.isSmallViewport = $(window).width() < 768;
@@ -256,42 +282,40 @@
             }
 
             function initLocalStorage() {
-                $scope.localStorage = localStorageService.get('polly');
-                console.log('current state of the local storage:', angular.copy($scope.localStorage));
+                localStorage = localStorageService.get('polly');
+                console.log('current state of the local storage:', angular.copy(localStorage));
 
                 // new instance? if so init a new storage object
-                if (initDefault || $scope.localStorage == null) {
-                    $scope.localStorage = {
-                        voice: {
-                            index: 0,
-                            gender: 'female',
-                        },
+                if (initDefault || localStorage == null) {
+                    localStorage = {
+                        selection: $scope.selection,
                         language: 'english',
                         history: [],
                         saved: defaultPhrases,
                     }
 
-                    $scope.history = $scope.localStorage.history;
+                    $scope.history = localStorage.history;
                     $scope.saved = defaultPhrases;
 
                     // set the new default local storage object
-                    localStorageService.set('polly', $scope.localStorage);
+                    localStorageService.set('polly', localStorage);
                 }
                 // use the storage object to set up the env.
                 else {
                     console.log('init app with storage object');
-
-                    $scope.selectedIndex = $scope.localStorage.voice.index;
-                    if ($scope.localStorage.voice.gender == 'female') {
-                        $scope.isMale = false;
+                    // correct an older version of local storage that did not use this
+                    if (localStorage.selection == undefined) {
+                        localStorage.selection = $scope.selection;
                     }
-                    else {
-                        $scope.isMale = true;
+
+                    $scope.selection = localStorage.selection;
+                    if ($scope.selection.isMale) {
                         $('#genderToggle').bootstrapToggle('toggle');
                     }
 
-                    $scope.history =  validateData($scope.localStorage.history) ? $scope.localStorage.history : [];
-                    $scope.saved =  validateData($scope.localStorage.saved) ? $scope.localStorage.saved : defaultPhrases;
+                    // validate the history and saved lists
+                    $scope.history =  validateData(localStorage.history) ? localStorage.history : [];
+                    $scope.saved =  validateData(localStorage.saved) ? localStorage.saved : defaultPhrases;
                 }
             }
 
@@ -316,7 +340,17 @@
                     // event to watch changes in the toggle.
                     $('#genderToggle').change(function() {
                         console.log('toggled:', $(this).prop('checked'));
-                        $scope.isMale = !$(this).prop('checked');
+
+                        if ($(this).prop('checked')) {
+                            console.log('switched to female');
+                            $scope.selection.isMale = false;
+                            $scope.selectVoice($scope.selection.femaleIndex);                            
+                        }
+                        else {
+                            console.log('switched to male');
+                            $scope.selection.isMale = true;
+                            $scope.selectVoice($scope.selection.maleIndex);                            
+                        }
                         $scope.$apply();
                     });
                 });
@@ -386,8 +420,8 @@
                 if ($scope.history.length > maxHistoryCount) {
                     $scope.history.splice(-1, 1);
                 }
-                $scope.localStorage.history = $scope.history;
-                localStorageService.set('polly', $scope.localStorage);
+                localStorage.history = $scope.history;
+                localStorageService.set('polly', localStorage);
                 // console.log('history:', $scope.history);
             }
 
@@ -422,10 +456,10 @@
                     }
                 }
                 // save the new order to local storage
-                $scope.localStorage.saved = savedList;
+                localStorage.saved = savedList;
 
-                console.log('updating localStorage', $scope.localStorage)
-                localStorageService.set('polly', $scope.localStorage);
+                console.log('updating localStorage', localStorage)
+                localStorageService.set('polly', localStorage);
             }
 
             function throwToast(message) {
@@ -933,13 +967,13 @@
                             <div class="dropDownItem" 
                                 ng-repeat="voice in voices"
                                 ng-click="selectVoice($index)"
-                                ng-show="!isMale && voice.Gender == 'Female'">
+                                ng-show="!selection.isMale && voice.Gender == 'Female'">
                                 {{voice.Name}} ({{voice.LanguageName}})
                             </div>
                             <div class="dropDownItem" 
                                 ng-repeat="voice in voices"
                                 ng-click="selectVoice($index)"
-                                ng-show="isMale && voice.Gender == 'Male'">
+                                ng-show="selection.isMale && voice.Gender == 'Male'">
                                 {{voice.Name}} ({{voice.LanguageName}})
                             </div>
                         </div>
@@ -948,10 +982,10 @@
                 <!-- display the selected voice -->
                 <div class="col-sm-6" style="padding-top: 6px;">
                     <span class="displayVoiceName">
-                        <i class="fa fa-male" aria-hidden="true" ng-show="voices[selectedIndex].Gender == 'Male'"></i>
-                        <i class="fa fa-female" aria-hidden="true" ng-show="voices[selectedIndex].Gender == 'Female'"></i>
+                        <i class="fa fa-male" aria-hidden="true" ng-show="voices[selection.index].Gender == 'Male'"></i>
+                        <i class="fa fa-female" aria-hidden="true" ng-show="voices[selection.index].Gender == 'Female'"></i>
                         &ensp;
-                        {{voices[selectedIndex].Name}} ({{voices[selectedIndex].LanguageName}})
+                        {{voices[selection.index].Name}} ({{voices[selection.index].LanguageName}})
                     </span>
                 </div>
                 <!-- </div> -->
