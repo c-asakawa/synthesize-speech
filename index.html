@@ -21,7 +21,6 @@
     <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/angularjs/1.5.5/angular-animate.min.js"></script>
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/angular-local-storage/0.7.1/angular-local-storage.min.js"></script>
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.2.1/jquery.min.js"></script>
-    <!-- <script type="text/javascript" src="jquery.ui.touch-punch.min.js"></script> -->
     <script type="text/javascript" src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
     <script type="text/javascript" src="https://gitcdn.github.io/bootstrap-toggle/2.2.2/js/bootstrap-toggle.min.js"></script>
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/Ladda/1.0.5/spin.min.js"></script>
@@ -198,6 +197,7 @@
             $scope.redoLast = function() {
                 $scope.text = $scope.previousText;
                 $scope.previousText = '';
+                $scope.synthesize();
             }
             $scope.toggleEdit = function() {
                 // currently enabled, toggle it
@@ -231,6 +231,7 @@
             }
 
             function initApp() {
+
                 var loading_screen = pleaseWait({
                   // logo: false,
                   backgroundColor: '#fff',
@@ -244,6 +245,7 @@
                     initLocalStorage();
                     $scope.$apply();
                     initToggle();
+                    initTooltips();
                     initDragDrop();
                     $scope.focusInput();
                     loading_screen.finish();
@@ -303,6 +305,12 @@
                     }
                 }
                 return true;
+            }
+
+            function initTooltips() {
+                $(document).ready(function () {
+                    $('button').tooltip();
+                });
             }
 
             function initToggle() {
@@ -963,10 +971,11 @@
                 ng-style="isSmallViewport ? {'right': '0'} : {'right': '20px'}">
                 <i class="fa fa-undo" aria-hidden="true" style="font-size:20px;color: #555;"></i>
             </button>
-            <button class="btn textAreaButton" 
+            <button class="btn textAreaButton"
                 ng-if="previousText.length == 0 && text.length > 0"
                 ng-click="clear()"
-                ng-style="isSmallViewport ? {'right': '0'} : {'right': '20px'}">
+                ng-style="isSmallViewport ? {'right': '0'} : {'right': '20px'}"
+                data-toggle="tooltip" data-placement="bottom" title="Clear">
                 <i class="fa fa-ban" aria-hidden="true" style="font-size:20px;color: #555;"></i>
             </button>
             <textarea ng-model="text" 
@@ -1002,7 +1011,7 @@
                         <i class="fa fa-ban" aria-hidden="true"></i>
                         &ensp;Clear
                     </button>
-                    <!-- clear text button -->
+                    <!-- save text button -->
                     <button type="button" 
                         class="btn btn-primary btn-lg btn-block largeButton halfButton saveButtonPosition" 
                         ng-click="save(text)">
