@@ -593,6 +593,7 @@
             border-color: #eee;
             padding: 10px;
             font-size: 18px;
+            padding-right: 40px;
         }
         #historyContainer {
             height: 350px;
@@ -609,10 +610,11 @@
             min-height: 38px;
             padding: 10px;
         }
-        .redoButton {
+        .textAreaButton {
             position: absolute;
             margin-top: 5px;
             background-color: transparent;
+            opacity: 0.5;
         }
         .boxShadow {
             -webkit-box-shadow: 0px 5px 10px 0px rgba(0,0,0,0.5);
@@ -955,20 +957,20 @@
             </nav> <!-- end voice selection row -->
 
             <!-- user input text area -->
-            <button class="btn redoButton" 
+            <button class="btn textAreaButton" 
                 ng-if="previousText.length > 0 && text.length == 0"
                 ng-click="redoLast()"
                 ng-style="isSmallViewport ? {'right': '0'} : {'right': '20px'}">
                 <i class="fa fa-undo" aria-hidden="true" style="font-size:20px;color: #555;"></i>
             </button>
-            <button class="btn redoButton" 
+            <button class="btn textAreaButton" 
                 ng-if="previousText.length == 0 && text.length > 0"
                 ng-click="clear()"
                 ng-style="isSmallViewport ? {'right': '0'} : {'right': '20px'}">
                 <i class="fa fa-ban" aria-hidden="true" style="font-size:20px;color: #555;"></i>
             </button>
             <textarea ng-model="text" 
-                ng-style="isSmallViewport ? {'height': '120px'} : {'height': '220px'}"
+                ng-style="isSmallViewport ? {'height': '80px'} : {'height': '220px'}"
                 id="speechInput"
                 class="textInput boxShadow"
                 ng-keydown="$event.keyCode == 13 && pressEnterOnText($event);"
