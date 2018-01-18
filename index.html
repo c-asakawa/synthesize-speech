@@ -47,7 +47,7 @@
                 'pcm': 'audio/wave; codecs=1'
             };
             var maxHistoryCount = 100;
-            var textTimeout = 1000 * 5;
+            var textTimeout = 1000;
             var savedPhrasesObject = [];
             var defaultPhrases = [
                 [
@@ -86,25 +86,26 @@
             initApp();
 
             $scope.clear = function() { $scope.text = ''; }
+            // this method is called from selecting a voice drop down option,
+            // and also when toggling the gender selection
             $scope.selectVoice = function(index) { 
                 if (debug) { console.log('selectVoice() index:', index); }
                 $scope.selection.index = index;
+                // set the gender selection index
                 if ($scope.selection.isMale) {
                     $scope.selection.maleIndex = index;
                 }
                 else {
                     $scope.selection.femaleIndex = index;
                 }
-
                 localStorage.selection = $scope.selection;
                 localStorageService.set('polly', localStorage);
-
-
             }
+            // this function is called from user clicking the save button
             $scope.save = function() { 
                 // dont proceed if the text is already saved.
                 if ($scope.text.length == 0) {
-                    throwToast('Enter some text, then press the save button again');
+                    throwToast('Enter some text, then press the save button again.');
                     return;
                 }
 
@@ -125,15 +126,18 @@
                 localStorage.saved = $scope.saved;
                 localStorageService.set('polly', localStorage);
             }
-        
+            // synthesizes the speech in the input text box
             $scope.synthesize = function(newText, callback) {
                 newText = newText == true ? true : false;
                 // pass an empty function if callback is not provided
                 callback = callback == undefined ? function(){} : callback;
 
                 var selectedVoice = $scope.voices[$scope.selection.index].Id;
-                var textSnapShot = angular.copy($scope.text);
-                if (debug) { console.log('synthesizing text:', textSnapShot) }
+                if (debug) { console.log('synthesizing text:', $scope.text) }
+
+                $timeout(function() {
+                    $scope.text = '';
+                }, textTimeout);
 
                 // error checking
                 if ($scope.text.length == 0) {
@@ -153,15 +157,6 @@
                         $scope.loading = true;
                         addToHistory();
                     }
-                    // clear out the text 
-                    $timeout(function() {
-                        if (textSnapShot == $scope.text) {
-                            // save the text for user redo button
-                            $scope.previousText = textSnapShot;
-                            $scope.text = '';
-                        }
-                    }, textTimeout);
-
                     // Point the player to the streaming server
                     player.src = '/read?voiceId=' +
                         encodeURIComponent(selectedVoice) +
@@ -169,21 +164,21 @@
                         '&outputFormat=' + $scope.supportedFormats[0];
                     player.play().then(function() {
                         $scope.loading = false;
+                        // clear out the text input
                         return callback();
                     });
-
                     // Stop the form from submitting,
                     // Submitting the form is allowed only if the browser doesn't
                     // support Javascript to ensure functionality in such a case
                     event.preventDefault();
                 }
             }
-
+            // if user presses the enter key while focusing text input
             $scope.pressEnterOnText = function(event) {
                 event.preventDefault();
                 $scope.synthesize(false, function(){});
             }
-            $scope.clickEntry = function(entry) {
+            $scope.clickEntry = function(entry) { 
                 if (debug) { console.log('clickedHistory:', entry); }
                 $scope.text = entry.text;
                 entry.loading = true;
@@ -195,8 +190,11 @@
                 $("ul.savedPhrases").sortable("disable");
             }
             $scope.redoLast = function() {
-                $scope.text = $scope.previousText;
-                $scope.previousText = '';
+                if ($scope.history.length == 0) {
+                    throwToast('There is no previous message for me to say.');
+                    return;
+                }
+                $scope.text = $scope.history[0].text;
                 $scope.synthesize();
             }
             $scope.toggleEdit = function() {
@@ -550,8 +548,10 @@
             font-weight: bold;
             margin-bottom: 5px;
         }
-        .halfButton {
-            width:49%
+        .narrowButton {
+            width: 32.2%;
+            display: inline-grid;
+            margin-top: 0 !important;
         }
         .row {
             margin: 20px 0;
@@ -672,6 +672,9 @@
         ul { list-style-type:none; padding:0; margin:0;}
         body.dragging, body.dragging * {
           cursor: move !important;
+        }
+        ..btn-block+.btn-block {
+            margin-top: 0 !important;
         }
         .dragged {
           position: absolute;
@@ -966,13 +969,13 @@
 
             <!-- user input text area -->
             <button class="btn textAreaButton" 
-                ng-if="previousText.length > 0 && text.length == 0"
+                ng-if="history.length > 0 && text.length == 0"
                 ng-click="redoLast()"
                 ng-style="isSmallViewport ? {'right': '0'} : {'right': '20px'}">
                 <i class="fa fa-undo" aria-hidden="true" style="font-size:20px;color: #555;"></i>
             </button>
             <button class="btn textAreaButton"
-                ng-if="previousText.length == 0 && text.length > 0"
+                ng-if="text.length > 0"
                 ng-click="clear()"
                 ng-style="isSmallViewport ? {'right': '0'} : {'right': '20px'}"
                 data-toggle="tooltip" data-placement="bottom" title="Clear">
@@ -1004,16 +1007,23 @@
                     </button>
                 </div>
                 <div class="col-sm-6 actionButtonCol">
+                    <!-- redo last -->
+                    <button type="button" 
+                        class="btn btn-primary btn-lg btn-block largeButton narrowButton" 
+                        ng-click="redoLast(text)">
+                        <i class="fa fa-undo" aria-hidden="true"></i>
+                        &ensp;Redo 
+                    </button>
                     <!-- clear text button -->
                     <button type="button"
-                        class="btn btn-primary btn-lg btn-block largeButton halfButton" 
+                        class="btn btn-primary btn-lg btn-block largeButton narrowButton" 
                         ng-click="clear()">
                         <i class="fa fa-ban" aria-hidden="true"></i>
                         &ensp;Clear
                     </button>
                     <!-- save text button -->
                     <button type="button" 
-                        class="btn btn-primary btn-lg btn-block largeButton halfButton saveButtonPosition" 
+                        class="btn btn-primary btn-lg btn-block largeButton narrowButton" 
                         ng-click="save(text)">
                         <i class="fa fa-floppy-o" aria-hidden="true"></i>
                         &ensp;Save
