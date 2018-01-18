@@ -956,10 +956,16 @@
 
             <!-- user input text area -->
             <button class="btn redoButton" 
-                ng-if="previousText.length > 0"
+                ng-if="previousText.length > 0 && text.length == 0"
                 ng-click="redoLast()"
                 ng-style="isSmallViewport ? {'right': '0'} : {'right': '20px'}">
                 <i class="fa fa-undo" aria-hidden="true" style="font-size:20px;color: #555;"></i>
+            </button>
+            <button class="btn redoButton" 
+                ng-if="previousText.length == 0 && text.length > 0"
+                ng-click="clear()"
+                ng-style="isSmallViewport ? {'right': '0'} : {'right': '20px'}">
+                <i class="fa fa-ban" aria-hidden="true" style="font-size:20px;color: #555;"></i>
             </button>
             <textarea ng-model="text" 
                 ng-style="isSmallViewport ? {'height': '120px'} : {'height': '220px'}"
@@ -988,7 +994,7 @@
                 </div>
                 <div class="col-sm-6 actionButtonCol">
                     <!-- clear text button -->
-                    <button type="button" 
+                    <button type="button"
                         class="btn btn-primary btn-lg btn-block largeButton halfButton" 
                         ng-click="clear()">
                         <i class="fa fa-ban" aria-hidden="true"></i>
