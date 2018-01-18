@@ -539,9 +539,9 @@
 
     <style>
         .btn-primary { background-color: #13a3d5 !important; }
-        .btn-primary:hover { background-color: #0c86b1 !important; }
         .btn-primary:active { background-color: #0c86b1 !important; }
-        .btn-success { background-color: #31c35e  }
+        .btn-success { background-color: #31c35e !important  }
+        .btn-success:active { background-color: #2bad53 !important  }
         .largeButton {
             height: 80px;
             font-size: 16px;
@@ -759,10 +759,8 @@
             font-size: 18px;
         }
         .btn-female { background-color: #ffbad2; color: #fff; }
-        .btn-female:hover { background-color: #f2b0c7; color: #fff; }
         .btn-female:active { background-color: #f2b0c7; color: #fff; }
         .btn-male { background-color: #89cff0; color: #fff; }
-        .btn-male:hover { background-color: #7abcdb; color: #fff; }
         .btn-male:active { background-color: #7abcdb; color: #fff; }
         .toggle {
             max-height: 36px !important;
@@ -896,6 +894,14 @@
         }
         .pg-loading-logo-header {
             display: none;
+        }
+
+        /* only show hover on non-mobile devices */
+        @media (hover: hover) {
+            .btn-success:hover { background-color: #2bad53 !important;  }
+            .btn-primary:hover { background-color: #0c86b1 !important; }
+            .btn-female:hover { background-color: #f2b0c7; color: #fff; }
+            .btn-male:hover { background-color: #7abcdb; color: #fff; }
         }
 
     </style>
