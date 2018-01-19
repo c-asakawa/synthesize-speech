@@ -5,7 +5,8 @@ or can be hosted on a server.
 
 ### Application Requirements
 Web browser compliant with the HTML5 and EcmaScript5 standards (for example, Chrome 23.0 or higher, 
-Firefox 21.0 or higher, Internet Explorer 9.0, or higher) Python version greater than 3.0
+Firefox 21.0 or higher, Internet Explorer 9.0, or higher) Python version greater than 3.0. You will also need an account
+with AWS at aws.amazon.com
 
 ### Getting Started
 1. Clone this repo `git clone https://github.com/c-asakawa/synthesize-speech.git`
